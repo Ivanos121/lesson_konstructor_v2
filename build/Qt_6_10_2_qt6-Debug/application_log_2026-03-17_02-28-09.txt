@@ -1,0 +1,20 @@
+[2026-03-17 02:28:09] DEBUG: Путь базы данных "/home/elf/sqlite_prog/qtsqlite/base/lesson_base.db"
+[2026-03-17 02:28:09] DEBUG: Loaded table names: QList("Lessons", "Save_check")
+[2026-03-17 02:28:09] DEBUG: Loaded table names: QList("Lessons", "Save_check")
+[2026-03-17 02:28:09] DEBUG: Selected table: "Lessons"
+[2026-03-17 02:28:09] DEBUG: Found table in sqlite_master: "Lessons"
+[2026-03-17 02:28:09] DEBUG: SQL: "SELECT * FROM \"Lessons\" ORDER BY id"
+[2026-03-17 02:28:09] DEBUG: rows loaded: 14
+[2026-03-17 02:28:09] DEBUG: 
+=== APPLYING ROW HEIGHTS ===
+[2026-03-17 02:28:09] DEBUG: Calculated row height: 84
+[2026-03-17 02:28:09] DEBUG: Applied 84 to all rows
+[2026-03-17 02:28:09] DEBUG: === DONE ===
+
+[2026-03-17 02:28:09] DEBUG: Приложение запущено
+[2026-03-17 02:28:09] INFO: Это информационное сообщение
+[2026-03-17 02:28:09] WARNING: Это предупреждение
+[2026-03-17 02:28:09] CRITICAL: Произошла критическая ошибка
+[2026-03-17 02:28:11] WARNING: QSqlDatabasePrivate::removeDatabase: connection 'qt_sql_default_connection' is still in use, all queries will cease to work.
+[2026-03-17 02:28:11] WARNING: QSqlDatabasePrivate::addDatabase: duplicate connection name 'qt_sql_default_connection', old connection removed.
+[2026-03-17 02:28:52] DEBUG: Ячейка пустая: 0 0

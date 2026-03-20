@@ -1,0 +1,26 @@
+[2026-03-17 01:36:06] DEBUG: Путь базы данных "/home/elf/sqlite_prog/qtsqlite/base/lesson_base.db"
+[2026-03-17 01:36:06] DEBUG: Loaded table names: QList("Lessons", "Save_check")
+[2026-03-17 01:36:06] DEBUG: Loaded table names: QList("Lessons", "Save_check")
+[2026-03-17 01:36:06] DEBUG: Selected table: "Lessons"
+[2026-03-17 01:36:06] DEBUG: Found table in sqlite_master: "Lessons"
+[2026-03-17 01:36:06] DEBUG: SQL: "SELECT * FROM \"Lessons\" ORDER BY id"
+[2026-03-17 01:36:06] DEBUG: rows loaded: 14
+[2026-03-17 01:36:06] DEBUG: 
+=== APPLYING ROW HEIGHTS ===
+[2026-03-17 01:36:06] DEBUG: Calculated row height: 84
+[2026-03-17 01:36:06] DEBUG: Applied 84 to all rows
+[2026-03-17 01:36:06] DEBUG: === DONE ===
+
+[2026-03-17 01:36:06] DEBUG: Приложение запущено
+[2026-03-17 01:36:06] INFO: Это информационное сообщение
+[2026-03-17 01:36:06] WARNING: Это предупреждение
+[2026-03-17 01:36:06] CRITICAL: Произошла критическая ошибка
+[2026-03-17 01:36:09] WARNING: QSqlDatabasePrivate::removeDatabase: connection 'qt_sql_default_connection' is still in use, all queries will cease to work.
+[2026-03-17 01:36:09] WARNING: QSqlDatabasePrivate::addDatabase: duplicate connection name 'qt_sql_default_connection', old connection removed.
+[2026-03-17 01:36:11] DEBUG: Failed to execute query for "Понедельник" State: 0 Week: 9 Error: "Количество параметров не совпадает"
+[2026-03-17 01:36:12] DEBUG: Failed to execute query for "Вторник" State: 0 Week: 9 Error: "Количество параметров не совпадает"
+[2026-03-17 01:36:13] DEBUG: Failed to execute query for "Среда" State: 0 Week: 9 Error: "Количество параметров не совпадает"
+[2026-03-17 01:36:14] DEBUG: Failed to execute query for "Четверг" State: 0 Week: 9 Error: "Количество параметров не совпадает"
+[2026-03-17 01:36:15] DEBUG: Failed to execute query for "Пятница" State: 0 Week: 9 Error: "Количество параметров не совпадает"
+[2026-03-17 01:36:15] DEBUG: Failed to execute query for "Суббота" State: 0 Week: 9 Error: "Количество параметров не совпадает"
+[2026-03-17 01:36:16] DEBUG: Failed to execute query for "Воскресенье" State: 0 Week: 9 Error: "Количество параметров не совпадает"

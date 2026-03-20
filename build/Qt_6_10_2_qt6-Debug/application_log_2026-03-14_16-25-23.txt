@@ -1,0 +1,17 @@
+[2026-03-14 16:25:23] DEBUG: Путь базы данных "/home/elf/sqlite_prog/qtsqlite/base/lesson_base.db"
+[2026-03-14 16:25:23] DEBUG: Loaded table names: QList("Lessons", "Save_check")
+[2026-03-14 16:25:23] DEBUG: Loaded table names: QList("Lessons", "Save_check")
+[2026-03-14 16:25:23] DEBUG: Selected table: "Lessons"
+[2026-03-14 16:25:23] DEBUG: Found table in sqlite_master: "Lessons"
+[2026-03-14 16:25:23] DEBUG: SQL: "SELECT * FROM \"Lessons\" ORDER BY id"
+[2026-03-14 16:25:23] DEBUG: rows loaded: 14
+[2026-03-14 16:25:23] DEBUG: 
+=== APPLYING ROW HEIGHTS ===
+[2026-03-14 16:25:23] DEBUG: Calculated row height: 84
+[2026-03-14 16:25:23] DEBUG: Applied 84 to all rows
+[2026-03-14 16:25:23] DEBUG: === DONE ===
+
+[2026-03-14 16:25:23] DEBUG: Приложение запущено
+[2026-03-14 16:25:23] INFO: Это информационное сообщение
+[2026-03-14 16:25:23] WARNING: Это предупреждение
+[2026-03-14 16:25:23] CRITICAL: Произошла критическая ошибка

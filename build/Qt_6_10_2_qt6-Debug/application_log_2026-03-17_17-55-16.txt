@@ -1,0 +1,20 @@
+[2026-03-17 17:55:17] DEBUG: Путь базы данных "/home/elf/sqlite_prog/qtsqlite/base/lesson_base.db"
+[2026-03-17 17:55:17] DEBUG: Loaded table names: QList("Save_check", "Lessons")
+[2026-03-17 17:55:17] DEBUG: Loaded table names: QList("Save_check", "Lessons")
+[2026-03-17 17:55:17] DEBUG: Selected table: "Save_check"
+[2026-03-17 17:55:17] DEBUG: Found table in sqlite_master: "Save_check"
+[2026-03-17 17:55:17] DEBUG: SQL: "SELECT * FROM \"Save_check\" ORDER BY id"
+[2026-03-17 17:55:17] DEBUG: rows loaded: 6
+[2026-03-17 17:55:17] DEBUG: Available height or width is not positive.
+[2026-03-17 17:55:17] DEBUG: 
+=== APPLYING ROW HEIGHTS ===
+[2026-03-17 17:55:17] DEBUG: Calculated row height: 84
+[2026-03-17 17:55:17] DEBUG: Applied 84 to all rows
+[2026-03-17 17:55:17] DEBUG: === DONE ===
+
+[2026-03-17 17:55:17] DEBUG: Available height or width is not positive.
+[2026-03-17 17:55:17] DEBUG: Приложение запущено
+[2026-03-17 17:55:17] INFO: Это информационное сообщение
+[2026-03-17 17:55:17] WARNING: Это предупреждение
+[2026-03-17 17:55:17] CRITICAL: Произошла критическая ошибка
+[2026-03-17 17:55:17] DEBUG: Available height or width is not positive.

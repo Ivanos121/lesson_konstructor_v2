@@ -1,0 +1,42 @@
+[2026-03-17 20:46:11] DEBUG: Путь базы данных "/home/elf/sqlite_prog/qtsqlite/base/lesson_base.db"
+[2026-03-17 20:46:11] DEBUG: Loaded table names: QList("Lessons", "Save_check")
+[2026-03-17 20:46:11] DEBUG: Loaded table names: QList("Lessons", "Save_check")
+[2026-03-17 20:46:11] DEBUG: Selected table: "Lessons"
+[2026-03-17 20:46:11] DEBUG: Found table in sqlite_master: "Lessons"
+[2026-03-17 20:46:11] DEBUG: SQL: "SELECT * FROM \"Lessons\" ORDER BY id"
+[2026-03-17 20:46:11] DEBUG: rows loaded: 14
+[2026-03-17 20:46:11] DEBUG: Widget Height: 433
+[2026-03-17 20:46:11] DEBUG: Widget Width: 628
+[2026-03-17 20:46:11] DEBUG: Available Height: 401
+[2026-03-17 20:46:11] DEBUG: Available Width: 605
+[2026-03-17 20:46:11] DEBUG: 
+=== APPLYING ROW HEIGHTS ===
+[2026-03-17 20:46:11] DEBUG: Calculated row height: 84
+[2026-03-17 20:46:11] DEBUG: Applied 84 to all rows
+[2026-03-17 20:46:11] DEBUG: === DONE ===
+
+[2026-03-17 20:46:11] DEBUG: Widget Height: 433
+[2026-03-17 20:46:11] DEBUG: Widget Width: 628
+[2026-03-17 20:46:11] DEBUG: Available Height: 401
+[2026-03-17 20:46:11] DEBUG: Available Width: 605
+[2026-03-17 20:46:11] DEBUG: Приложение запущено
+[2026-03-17 20:46:11] INFO: Это информационное сообщение
+[2026-03-17 20:46:11] WARNING: Это предупреждение
+[2026-03-17 20:46:11] CRITICAL: Произошла критическая ошибка
+[2026-03-17 20:46:11] DEBUG: Widget Height: 517
+[2026-03-17 20:46:11] DEBUG: Widget Width: 1336
+[2026-03-17 20:46:11] DEBUG: Available Height: 485
+[2026-03-17 20:46:11] DEBUG: Available Width: 1334
+[2026-03-17 20:46:28] DEBUG: 
+=== ОТЛАДКА ===
+[2026-03-17 20:46:28] DEBUG: row= 0 column= 1
+[2026-03-17 20:46:28] DEBUG: comboBox_2=' "none" '
+[2026-03-17 20:46:28] DEBUG: comboBox_3=' "Верхняя неделя" '
+[2026-03-17 20:46:28] DEBUG: isRowOdd= false isColOdd= true
+[2026-03-17 20:46:28] DEBUG: СЦЕНАРИЙ 1: none + неделя
+[2026-03-17 20:46:28] DEBUG: Верхняя неделя — остаёмся в строке 0
+[2026-03-17 20:46:28] DEBUG: targetRow= 0 shouldMergeHorizontal= true shouldMergeVertical= false
+[2026-03-17 20:46:28] DEBUG: Текст записан в ячейку [ 0 , 1 ]
+[2026-03-17 20:46:28] DEBUG: Горизонтальное объединение выполнено
+[2026-03-17 20:46:28] DEBUG: === КОНЕЦ ===
+

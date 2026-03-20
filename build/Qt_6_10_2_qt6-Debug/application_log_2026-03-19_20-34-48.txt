@@ -1,0 +1,29 @@
+[2026-03-19 20:34:48] DEBUG: Путь базы данных "/home/elf/sqlite_prog/qtsqlite/base/lesson_base.db"
+[2026-03-19 20:34:48] DEBUG: Loaded table names: QList("Lessons", "Save_check")
+[2026-03-19 20:34:48] DEBUG: Loaded table names: QList("Lessons", "Save_check")
+[2026-03-19 20:34:48] DEBUG: Selected table: "Lessons"
+[2026-03-19 20:34:48] DEBUG: Found table in sqlite_master: "Lessons"
+[2026-03-19 20:34:48] DEBUG: SQL: "SELECT * FROM \"Lessons\" ORDER BY id"
+[2026-03-19 20:34:48] DEBUG: rows loaded: 14
+[2026-03-19 20:34:48] DEBUG: Widget Height: 433
+[2026-03-19 20:34:48] DEBUG: Widget Width: 628
+[2026-03-19 20:34:48] DEBUG: Available Height: 401
+[2026-03-19 20:34:48] DEBUG: Available Width: 605
+[2026-03-19 20:34:48] DEBUG: 
+=== APPLYING ROW HEIGHTS ===
+[2026-03-19 20:34:48] DEBUG: Calculated row height: 84
+[2026-03-19 20:34:48] DEBUG: Applied 84 to all rows
+[2026-03-19 20:34:48] DEBUG: === DONE ===
+
+[2026-03-19 20:34:48] DEBUG: Widget Height: 433
+[2026-03-19 20:34:48] DEBUG: Widget Width: 628
+[2026-03-19 20:34:48] DEBUG: Available Height: 401
+[2026-03-19 20:34:48] DEBUG: Available Width: 605
+[2026-03-19 20:34:48] DEBUG: Приложение запущено
+[2026-03-19 20:34:48] INFO: Это информационное сообщение
+[2026-03-19 20:34:48] WARNING: Это предупреждение
+[2026-03-19 20:34:48] CRITICAL: Произошла критическая ошибка
+[2026-03-19 20:34:48] DEBUG: Widget Height: 517
+[2026-03-19 20:34:48] DEBUG: Widget Width: 1336
+[2026-03-19 20:34:48] DEBUG: Available Height: 485
+[2026-03-19 20:34:48] DEBUG: Available Width: 1334

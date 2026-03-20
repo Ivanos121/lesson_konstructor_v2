@@ -1,0 +1,7 @@
+<RCC>
+    <qresource prefix="/img"/>
+    <qresource prefix="/">
+        <file>img/edit-table-cell-merge.svg</file>
+        <file>img/edit-table-cell-split.svg</file>
+    </qresource>
+</RCC>

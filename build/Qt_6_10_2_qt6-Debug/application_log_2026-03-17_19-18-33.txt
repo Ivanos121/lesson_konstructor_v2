@@ -1,0 +1,57 @@
+[2026-03-17 19:18:34] DEBUG: Путь базы данных "/home/elf/sqlite_prog/qtsqlite/base/lesson_base.db"
+[2026-03-17 19:18:34] DEBUG: Loaded table names: QList("Lessons", "Save_check")
+[2026-03-17 19:18:34] DEBUG: Loaded table names: QList("Lessons", "Save_check")
+[2026-03-17 19:18:34] DEBUG: Selected table: "Lessons"
+[2026-03-17 19:18:34] DEBUG: Found table in sqlite_master: "Lessons"
+[2026-03-17 19:18:34] DEBUG: SQL: "SELECT * FROM \"Lessons\" ORDER BY id"
+[2026-03-17 19:18:34] DEBUG: rows loaded: 14
+[2026-03-17 19:18:34] DEBUG: Widget Height: 433
+[2026-03-17 19:18:34] DEBUG: Widget Width: 628
+[2026-03-17 19:18:34] DEBUG: Available Height: 401
+[2026-03-17 19:18:34] DEBUG: Available Width: 605
+[2026-03-17 19:18:34] DEBUG: 
+=== APPLYING ROW HEIGHTS ===
+[2026-03-17 19:18:34] DEBUG: Calculated row height: 84
+[2026-03-17 19:18:34] DEBUG: Applied 84 to all rows
+[2026-03-17 19:18:34] DEBUG: === DONE ===
+
+[2026-03-17 19:18:34] DEBUG: Widget Height: 433
+[2026-03-17 19:18:34] DEBUG: Widget Width: 628
+[2026-03-17 19:18:34] DEBUG: Available Height: 401
+[2026-03-17 19:18:34] DEBUG: Available Width: 605
+[2026-03-17 19:18:34] DEBUG: Приложение запущено
+[2026-03-17 19:18:34] INFO: Это информационное сообщение
+[2026-03-17 19:18:34] WARNING: Это предупреждение
+[2026-03-17 19:18:34] CRITICAL: Произошла критическая ошибка
+[2026-03-17 19:18:34] DEBUG: Widget Height: 517
+[2026-03-17 19:18:34] DEBUG: Widget Width: 1336
+[2026-03-17 19:18:34] DEBUG: Available Height: 485
+[2026-03-17 19:18:34] DEBUG: Available Width: 1334
+[2026-03-17 19:18:54] DEBUG: 
+=== ОТЛАДКА ===
+[2026-03-17 19:18:54] DEBUG: row= 0 column= 1
+[2026-03-17 19:18:54] DEBUG: comboBox_2=' "1-я подгруппа раз в 2 недели" '
+[2026-03-17 19:18:54] DEBUG: comboBox_3=' "Верхняя неделя" '
+[2026-03-17 19:18:54] DEBUG: isRowOdd= false isColOdd= true
+[2026-03-17 19:18:54] DEBUG: СЦЕНАРИЙ 2: 1-я подгруппа раз в 2 недели
+[2026-03-17 19:18:54] DEBUG: Верхняя неделя, чётная строка и нечётный столбец — остаёмся в 0
+[2026-03-17 19:18:54] DEBUG: targetRow= 0 shouldMergeHorizontal= false shouldMergeVertical= false
+[2026-03-17 19:18:54] DEBUG: Текст записан в ячейку [ 0 , 1 ]
+[2026-03-17 19:18:54] DEBUG: === КОНЕЦ ===
+
+[2026-03-17 19:24:28] DEBUG: Database Error "Количество параметров не совпадает"
+[2026-03-17 19:24:34] DEBUG: Database Error "Количество параметров не совпадает"
+[2026-03-17 19:24:34] DEBUG: Database Error "Количество параметров не совпадает"
+[2026-03-17 19:24:34] DEBUG: Database Error "Количество параметров не совпадает"
+[2026-03-17 19:24:34] DEBUG: Database Error "Количество параметров не совпадает"
+[2026-03-17 19:24:34] DEBUG: Database Error "Количество параметров не совпадает"
+[2026-03-17 19:24:34] DEBUG: Database Error "Количество параметров не совпадает"
+[2026-03-17 19:24:34] DEBUG: Database Error "Количество параметров не совпадает"
+[2026-03-17 19:24:34] DEBUG: Database Error "Количество параметров не совпадает"
+[2026-03-17 19:24:34] DEBUG: Database Error "Количество параметров не совпадает"
+[2026-03-17 19:24:34] DEBUG: Database Error "Количество параметров не совпадает"
+[2026-03-17 19:24:34] DEBUG: Database Error "Количество параметров не совпадает"
+[2026-03-17 19:24:34] DEBUG: Database Error "Количество параметров не совпадает"
+[2026-03-17 19:24:34] DEBUG: Database Error "Количество параметров не совпадает"
+[2026-03-17 19:24:34] DEBUG: Database Error "Количество параметров не совпадает"
+[2026-03-17 19:24:34] DEBUG: Database Error "Количество параметров не совпадает"
