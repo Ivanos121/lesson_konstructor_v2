@@ -1,5 +1,5 @@
 Desktop-*
-build-*
+build
 *.pro.user
 *.pro.user.*
 *.o
@@ -10,4 +10,5 @@ ImView/.qmake.stash
 *.odt
 ImView/.qtc_clangd
 *-Debug/
+.qtcreator
 
