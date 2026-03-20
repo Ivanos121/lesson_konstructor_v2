@@ -1,1 +1,0 @@
-[2026-03-17 19:15:00] DEBUG: Путь базы данных "/home/elf/sqlite_prog/qtsqlite/base/lesson_base.db"
