@@ -36,9 +36,7 @@ MainWindow::MainWindow(QWidget *parent)
 
     //========ОТУРЫТИЕ БАЗЫ БАННЫХ=========
     db = QSqlDatabase::addDatabase("QSQLITE");
-    QString dbPath = QCoreApplication::applicationDirPath() + "/../../base/lesson_base.db";
-    dbPath = QDir::cleanPath(dbPath);  // Очистит .. и .
-    dbPath = QDir::toNativeSeparators(dbPath);
+    QString dbPath = QString(PROJECT_PATH) + "/base/lesson_base.db";
 
     qDebug() << "Путь базы данных" << dbPath;
 
@@ -254,6 +252,16 @@ MainWindow::MainWindow(QWidget *parent)
                 saveCheckboxState(currentMonth, week);
             });
 
+    connect(ui->load_check, &QAction::triggered, this, [this]()
+            {
+                int currentMonth = QDate::currentDate().month();
+                int currentYear = QDate::currentDate().year();
+                int week = QDate(currentYear, currentMonth, 1).weekNumber();
+
+                // Вызов функции saveCheckboxState с текущими месяцем и годом
+                loadCheckboxState(currentMonth, week);
+            });
+
         label2->setText(ui->tabWidget->tabText(0));
 
     applyRowHeights();
@@ -264,6 +272,8 @@ MainWindow::MainWindow(QWidget *parent)
     // Начальное заполнение таблицы
 
     adjustLabelFont();
+
+    //======НАСТРОЙКА TABLEWIDGET_6===============
 
     ui->tableWidget_6->setRowCount(10);
     ui->tableWidget_6->setColumnCount(13);
@@ -307,6 +317,221 @@ MainWindow::MainWindow(QWidget *parent)
     ui->tableWidget_6->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
     ui->tableWidget_3->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
 
+    for (int col = 0; col < ui->tableWidget_6->columnCount(); ++col)
+    {
+        QTableWidgetItem *item = ui->tableWidget_6->item(6, col);
+
+        // Если ячейка пустая, её нужно создать, иначе метод item() вернет 0
+        if (!item)
+        {
+            item = new QTableWidgetItem();
+            ui->tableWidget_6->setItem(6, col, item);
+            ui->tableWidget_6->setItem(8, col, item);
+        }
+
+        item->setBackground(QColor(0x00FF00));
+    }
+    for (int col = 0; col < ui->tableWidget_6->columnCount(); ++col)
+    {
+        QTableWidgetItem *item = ui->tableWidget_6->item(8, col);
+
+        // Если ячейка пустая, её нужно создать, иначе метод item() вернет 0
+        if (!item)
+        {
+            item = new QTableWidgetItem();
+            ui->tableWidget_6->setItem(8, col, item);
+        }
+
+        item->setBackground(QColor(0x00FF00));
+    }
+
+    QTableWidgetItem *item = ui->tableWidget_6->item(6, 0);
+    item->setBackground(QColor(0x00FF00));
+
+    ui->tableWidget_6->update();
+
+    //======НАСТРОЙКА TABLEWIDGET_7===============
+
+    ui->tableWidget_7->setRowCount(10);
+    ui->tableWidget_7->setColumnCount(13);
+
+    horHeader7 = new VertikalheaderView(Qt::Horizontal, ui->tableWidget_7);
+    ui->tableWidget_7->setHorizontalHeader(horHeader7);
+
+    QStringList horizontalTexts7 = {
+        "Лекции",
+        "Лабораторные работы",
+        "Практические занятия",
+        "МРС",
+        "Индивидуальные занятия",
+        "Курсовое проектирование",
+        "Консультации",
+        "Рецензирование",
+        "Зачеты",
+        "Экзамены",
+        "Производственная практика",
+        "Дипломное проектирование",
+        "Итого, часов"
+    };
+
+    ui->tableWidget_7->setHorizontalHeaderLabels(horizontalTexts7);
+
+    QStringList vertikalTexts7 = {
+        "Февраль",
+        "Март",
+        "Апрель",
+        "Май",
+        "Июнь",
+        "Июль",
+        "Итого по плану",
+        "Итого за семестр",
+        "Итого по плану за год",
+        "Итого за год"
+
+    };
+
+    ui->tableWidget_7->setVerticalHeaderLabels(vertikalTexts7);
+    ui->tableWidget_7->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
+
+    for (int col = 0; col < ui->tableWidget_7->columnCount(); ++col)
+    {
+        QTableWidgetItem *item = ui->tableWidget_7->item(6, col);
+
+        // Если ячейка пустая, её нужно создать, иначе метод item() вернет 0
+        if (!item)
+        {
+            item = new QTableWidgetItem();
+            ui->tableWidget_7->setItem(6, col, item);
+            ui->tableWidget_7->setItem(8, col, item);
+        }
+
+        item->setBackground(QColor(0x00FF00));
+    }
+    for (int col = 0; col < ui->tableWidget_7->columnCount(); ++col)
+    {
+        QTableWidgetItem *item = ui->tableWidget_7->item(8, col);
+
+        // Если ячейка пустая, её нужно создать, иначе метод item() вернет 0
+        if (!item)
+        {
+            item = new QTableWidgetItem();
+            ui->tableWidget_7->setItem(8, col, item);
+        }
+
+        item->setBackground(QColor(0x00FF00));
+    }
+    ui->tableWidget_7->update();
+
+    //======НАСТРОЙКА TABLEWIDGET_8===============
+
+    ui->tableWidget_8->setRowCount(8);
+    ui->tableWidget_8->setColumnCount(13);
+
+    horHeader8 = new VertikalheaderView(Qt::Horizontal, ui->tableWidget_8);
+    ui->tableWidget_8->setHorizontalHeader(horHeader8);
+
+    QStringList horizontalTexts8 = {
+        "Лекции",
+        "Лабораторные работы",
+        "Практические занятия",
+        "МРС",
+        "Индивидуальные занятия",
+        "Курсовое проектирование",
+        "Консультации",
+        "Рецензирование",
+        "Зачеты",
+        "Экзамены",
+        "Производственная практика",
+        "Дипломное проектирование",
+        "Итого, часов"
+    };
+
+    ui->tableWidget_8->setHorizontalHeaderLabels(horizontalTexts8);
+
+    QStringList vertikalTexts8 = {
+        "Февраль",
+        "Март",
+        "Апрель",
+        "Май",
+        "Июнь",
+        "Июль",
+        "Итого по плану",
+        "Итого за семестр"
+    };
+
+    ui->tableWidget_8->setVerticalHeaderLabels(vertikalTexts8);
+    ui->tableWidget_8->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
+
+    for (int col = 0; col < ui->tableWidget_8->columnCount(); ++col)
+    {
+        QTableWidgetItem *item = ui->tableWidget_8->item(6, col);
+
+        // Если ячейка пустая, её нужно создать, иначе метод item() вернет 0
+        if (!item) {
+            item = new QTableWidgetItem();
+            ui->tableWidget_8->setItem(6, col, item);
+        }
+
+        item->setBackground(QColor(0x00FF00));
+    }
+    ui->tableWidget_8->update();
+
+    //======НАСТРОЙКА TABLEWIDGET_9===============
+
+    ui->tableWidget_9->setRowCount(8);
+    ui->tableWidget_9->setColumnCount(13);
+
+    horHeader9 = new VertikalheaderView(Qt::Horizontal, ui->tableWidget_9);
+    ui->tableWidget_9->setHorizontalHeader(horHeader9);
+
+    QStringList horizontalTexts9 = {
+        "Лекции",
+        "Лабораторные работы",
+        "Практические занятия",
+        "МРС",
+        "Индивидуальные занятия",
+        "Курсовое проектирование",
+        "Консультации",
+        "Рецензирование",
+        "Зачеты",
+        "Экзамены",
+        "Производственная практика",
+        "Дипломное проектирование",
+        "Итого, часов"
+    };
+
+    ui->tableWidget_9->setHorizontalHeaderLabels(horizontalTexts9);
+
+    QStringList vertikalTexts9 = {
+        "Февраль",
+        "Март",
+        "Апрель",
+        "Май",
+        "Июнь",
+        "Июль",
+        "Итого по плану",
+        "Итого за семестр"
+    };
+
+    ui->tableWidget_9->setVerticalHeaderLabels(vertikalTexts9);
+    ui->tableWidget_9->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
+
+    for (int col = 0; col < ui->tableWidget_9->columnCount(); ++col)
+    {
+        QTableWidgetItem *item = ui->tableWidget_9->item(6, col);
+
+        // Если ячейка пустая, её нужно создать, иначе метод item() вернет 0
+        if (!item) {
+            item = new QTableWidgetItem();
+            ui->tableWidget_9->setItem(6, col, item);
+        }
+
+        item->setBackground(QColor(0x00FF00));
+    }
+    ui->tableWidget_9->update();
+
+    //======НАСТРОЙКА TABLEWIDGET_2===============
+
     ui->tableWidget_2->setRowCount(14);
     ui->tableWidget_2->setColumnCount(13);
 
@@ -315,7 +540,8 @@ MainWindow::MainWindow(QWidget *parent)
     MergedHeader *horizontalHeader2 = new MergedHeader(Qt::Horizontal, ui->tableWidget_2);
     ui->tableWidget_2->setHorizontalHeader(horizontalHeader2);
 
-    QList<QPair<int, int>> horizontalMerges2 = {
+    QList<QPair<int, int>> horizontalMerges2 =
+    {
         {1, 2},   // столбцы 0-1
         {3, 2},   // столбцы 2-3
         {5, 2},   // столбцы 2-3
@@ -415,16 +641,25 @@ QString MainWindow::getDateForCell(int row, int col, int year, int month)
 
 void MainWindow::saveCheckboxState(int month, int year)
 {
-    QSqlDatabase db = QSqlDatabase::addDatabase("QSQLITE");
-    db.setDatabaseName("lesson_base.db");
+    // QSqlDatabase db = QSqlDatabase::addDatabase("QSQLITE");
+    // db.setDatabaseName("lesson_base.db");
+
+    // Используем существующее соединение или создаем новое правильно
+    QSqlDatabase db = QSqlDatabase::contains("qt_sql_default_connection")
+                          ? QSqlDatabase::database()
+                          : QSqlDatabase::addDatabase("QSQLITE");
+
+    // Формируем ПОЛНЫЙ путь к базе данных в папке проекта
+    QString dbPath = QString(PROJECT_PATH) + "/base/lesson_base.db";
+    db.setDatabaseName(dbPath);
 
     if (!db.open()) {
-        QMessageBox::warning(this, "Ошибка", "Не удалось открыть базу данных.");
+        QMessageBox::warning(this, "Ошибка", "Не удалось найти файл базы по пути: " + dbPath);
         return;
     }
 
     int weekNumber = QDate(year, month, 1).weekNumber(); // Получаем номер недели
-    QStringList dayNames = {"Понедельник", "Вторник", "Среда", "Четверг", "Пятница", "Суббота", "Воскресенье"};
+    QStringList dayNames = {"Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"};
 
     bool hasError = false;
 
@@ -453,20 +688,24 @@ void MainWindow::saveCheckboxState(int month, int year)
                 continue; // Пропускаем выполнение запроса, если столбец не корректен
             }
 
-            // QString sqlQuery = QString("UPDATE Save_check SET %1 = ? WHERE id = ?").arg(dayName);
-            // QSqlQuery query;
-            // query.prepare(sqlQuery);
-            // query.addBindValue(state);
-            // query.addBindValue(id);
+            // 1. Формируем строку ЗАРАНЕЕ.
+            // Используем %1 для столбца и ? для значений (это стандарт для SQLite)
+            QString queryText = QString("UPDATE Save_check SET %1 = ? WHERE id = ?").arg(dayName);
 
-            QString queryString = QString("UPDATE Save_check SET %1 = :state WHERE id = :id").arg(dayName);
             QSqlQuery query;
-            query.prepare(queryString);
-            query.bindValue(":state", state);
-            query.bindValue(":id", id);
+
+            // 2. Сначала подготавливаем СФОРМИРОВАННУЮ строку
+            if (!query.prepare(queryText)) {
+                qDebug() << "Ошибка подготовки запроса:" << query.lastError().text();
+                continue;
+            }
+
+            // 3. Привязываем значения ПО ПОРЯДКУ появления знаков вопроса
+            query.addBindValue(state); // заменит первый '?'
+            query.addBindValue(id);    // заменит второй '?'
 
             // Log the constructed SQL query for debugging
-            qDebug() << "Executing SQL:" << queryString
+            qDebug() << "Executing SQL:" << queryText
                      << ", State:" << state
                      << ", ID:" << id;
 
@@ -491,7 +730,7 @@ void MainWindow::saveCheckboxState(int month, int year)
 
 bool MainWindow::isValidColumn(const QString &columnName) const
 {
-    QStringList validColumns = { "Понедельник", "Вторник", "Среда", "Четверг", "Пятница", "Суббота", "Воскресенье" };
+    QStringList validColumns = { "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday" };
     return validColumns.contains(columnName);
 }
 
@@ -591,47 +830,84 @@ void MainWindow::onMonthChanged(int index)
     int currentRow = 0;
     for (int day = 1; day <= daysInMonth; ++day)
     {
-        // Create a horizontal layout for checkbox and label
+        // // Create a horizontal layout for checkbox and label
+        // QWidget *widget = new QWidget();
+        // QHBoxLayout *layout = new QHBoxLayout(widget);
+
+        // // Creating the checkbox
+        // QCheckBox *checkBox = new QCheckBox();
+
+        // // Determine if it is a weekend
+        // bool isWeekend = (firstDayOfWeek == 7 || firstDayOfWeek == 6);
+        // checkBox->setChecked(!isWeekend); // Check for weekdays, uncheck for weekends
+
+        // // Set initial color based on the day type
+        // widget->setStyleSheet(isWeekend ? "background-color: red;" : "background-color: #00FF00;");
+
+        // // Connect checkbox state change to a slot
+        // connect(checkBox, &QCheckBox::checkStateChanged, this, [=](int state) {
+        //     if (state == Qt::Checked) {
+        //         widget->setStyleSheet("background-color: #00FF00;"); // Light green for checked state
+        //     } else {
+        //         widget->setStyleSheet("background-color: red;");
+        //     }
+        // });
+
+        // layout->addWidget(checkBox);
+
+        // // Creating the label
+        // QLabel *label = new QLabel(QString::number(day));
+        // layout->addWidget(label);
+
+        // // Увеличение размера шрифта
+        // QFont font = label->font();
+        // font.setPointSize(16); // Укажите нужный размер
+        // label->setFont(font);
+
+        // // Set layout spacing to 0
+        // layout->setContentsMargins(10, 0, 0, 0);
+
+        // // Set this layout to the widget
+        // widget->setLayout(layout);
+
+        // // Set the widget in the table cell
+        // tv->setCellWidget(currentRow, startColumn, widget);
+
         QWidget *widget = new QWidget();
         QHBoxLayout *layout = new QHBoxLayout(widget);
-
-        // Creating the checkbox
         QCheckBox *checkBox = new QCheckBox();
-
-        // Determine if it is a weekend
         bool isWeekend = (firstDayOfWeek == 7 || firstDayOfWeek == 6);
-        checkBox->setChecked(!isWeekend); // Check for weekdays, uncheck for weekends
+        checkBox->setChecked(!isWeekend);
 
-        // Set initial color based on the day type
-        widget->setStyleSheet(isWeekend ? "background-color: red;" : "background-color: #00FF00;");
+        // ⭐ СТИЛИЗУЙТЕ ВЕСЬ КОНТЕЙНЕР И ВСЕ ДОЧЕРНИЕ ВИДЖЕТЫ
+        QString checkedStyle =
+            "QWidget { background-color: #00FF00; } "
+            "QCheckBox { background-color: #00FF00; } "
+            "QLabel { background-color: #00FF00; }";
 
-        // Connect checkbox state change to a slot
+        QString uncheckedStyle =
+            "QWidget { background-color: red; } "
+            "QCheckBox { background-color: red; } "
+            "QLabel { background-color: red; }";
+
+        widget->setStyleSheet(isWeekend ? uncheckedStyle : checkedStyle);
+
         connect(checkBox, &QCheckBox::checkStateChanged, this, [=](int state) {
             if (state == Qt::Checked) {
-                widget->setStyleSheet("background-color: #00FF00;"); // Light green for checked state
+                widget->setStyleSheet(checkedStyle);
             } else {
-                widget->setStyleSheet("background-color: red;");
+                widget->setStyleSheet(uncheckedStyle);
             }
         });
 
         layout->addWidget(checkBox);
-
-        // Creating the label
         QLabel *label = new QLabel(QString::number(day));
         layout->addWidget(label);
-
-        // Увеличение размера шрифта
         QFont font = label->font();
-        font.setPointSize(16); // Укажите нужный размер
+        font.setPointSize(16);
         label->setFont(font);
-
-        // Set layout spacing to 0
         layout->setContentsMargins(10, 0, 0, 0);
-
-        // Set this layout to the widget
         widget->setLayout(layout);
-
-        // Set the widget in the table cell
         tv->setCellWidget(currentRow, startColumn, widget);
 
         startColumn++;
@@ -663,118 +939,32 @@ void MainWindow::resizeEvent(QResizeEvent *event)
 
 void MainWindow::setColumnAndRowSizes(QTableWidget *tv)
 {
-    // tv = ui->tableWidget_3;
-
-    // // Учитываем высоту заголовка и внутренние отступы
-    // int availableHeight = tv->height() - tv->horizontalHeader()->height() - tv->frameWidth();
-    // int availableWidth = tv->width() - tv->verticalHeader()->width() - tv->frameWidth();
-
-    // // Проверяем, что доступное пространство не отрицательное
-    // if (availableHeight > 0 && availableWidth > 0)
-    // {
-    //     int columnCount = tv->columnCount(); // Get the column count
-
-    //     // Check if column count is positive to avoid division by zero
-    //     if (columnCount > 0)
-    //     {
-    //         // Устанавливаем пропорциональную ширину столбцов
-    //         int columnWidth = availableWidth / columnCount;
-    //         for (int col = 0; col < columnCount; ++col)
-    //         {
-    //             tv->setColumnWidth(col, columnWidth);
-    //         }
-
-    //         // Calculate row height based on available height and row count
-    //         int rowCount = tv->rowCount(); // Get the row count
-    //         if (rowCount > 0)
-    //         {
-    //             int rowHeight = availableHeight / rowCount; // Divide available height by the number of rows
-    //             for (int row = 0; row < rowCount; ++row)
-    //             {
-    //                 tv->setRowHeight(row, rowHeight); // Set height for each row
-    //             }
-    //         }
-    //         else
-    //         {
-    //             // If there are no rows, log the situation
-    //             qDebug() << "Row count is zero. Cannot set row height.";
-    //         }
-    //     }
-    //     else
-    //     {
-    //         // Log or handle the case where there are no columns
-    //         qDebug() << "Column count is zero. Cannot set column width.";
-    //     }
-    // }
-    // else
-    // {
-    //     // Log the available height and width for debugging
-    //     qDebug() << "Available height or width is not positive.";
-    // }
-
-    tv = ui->tableWidget_3;
+    // Используем переданный указатель, если он валиден, иначе берем из ui
+    if (!tv) {
+        tv = ui->tableWidget_3;
+    }
 
     if (!tv) {
         qDebug() << "Invalid QTableWidget pointer.";
         return;
     }
 
-    // Установите минимальные размеры для вашего QTableWidget
-    tv->setMinimumSize(200, 100); // Пример минимальных размеров
+    // Устанавливаем минимальные размеры
+    tv->setMinimumSize(200, 100);
 
-    // Получаем размеры виджета
-    int widgetHeight = tv->height();
-    int widgetWidth = tv->width();
+    // 1. Растягиваем СТОЛБЦЫ на всю ширину
+    // Stretch автоматически распределяет свободное пространство между всеми колонками
+    tv->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
 
-    qDebug() << "Widget Height:" << widgetHeight;
-    qDebug() << "Widget Width:" << widgetWidth;
+    // 2. Растягиваем СТРОКИ на всю высоту
+    // Это именно то, что заменяет ваш цикл setRowHeight и решает проблему с высотой
+    tv->verticalHeader()->setSectionResizeMode(QHeaderView::Stretch);
 
-    // Учитываем высоту заголовка и внутренние отступы
-    int availableHeight = widgetHeight - tv->horizontalHeader()->height() - tv->frameWidth();
-    int availableWidth = widgetWidth - tv->verticalHeader()->width() - tv->frameWidth();
+    // Опционально: отключаем полосы прокрутки, если хотим, чтобы таблица была строго по размеру окна
+    tv->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+    tv->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
 
-    // Логирование значений для отладки
-    qDebug() << "Available Height:" << availableHeight;
-    qDebug() << "Available Width:" << availableWidth;
-
-    // Проверяем, что доступное пространство не отрицательное
-    if (availableHeight > 0 && availableWidth > 0)
-    {
-        int columnCount = tv->columnCount(); // Get the column count
-
-        if (columnCount > 0)
-        {
-            // Устанавливаем пропорциональную ширину столбцов
-            int columnWidth = availableWidth / columnCount;
-            for (int col = 0; col < columnCount; ++col)
-            {
-                tv->setColumnWidth(col, columnWidth);
-            }
-
-            // Calculate row height based on available height and row count
-            int rowCount = tv->rowCount(); // Get the row count
-            if (rowCount > 0)
-            {
-                int rowHeight = availableHeight / rowCount; // Divide available height by the number of rows
-                for (int row = 0; row < rowCount; ++row)
-                {
-                    tv->setRowHeight(row, rowHeight); // Set height for each row
-                }
-            }
-            else
-            {
-                qDebug() << "Row count is zero. Cannot set row height.";
-            }
-        }
-        else
-        {
-            qDebug() << "Column count is zero. Cannot set column width.";
-        }
-    }
-    else
-    {
-        qDebug() << "Available height or width is not positive.";
-    }
+    qDebug() << "Table layout updated to Stretch mode.";
 }
 
 void MainWindow::formatTableItems(QTableWidget *tableWidget)
@@ -3120,4 +3310,90 @@ void MainWindow::printFullTable(QTableWidget *tableWidget, QPrinter *printer, QS
         }
     }
     painter.end();
+}
+
+void MainWindow::loadCheckboxState(int month, int year)
+{
+    QString dbPath = QString(PROJECT_PATH) + "/base/lesson_base.db";
+
+    if (db.isOpen()) {
+        db.close();
+    }
+
+    db.setDatabaseName(dbPath);
+
+    if (!db.open()) {
+        qDebug() << "❌ ОШИБКА: Не удалось открыть базу";
+        return;
+    }
+
+    qDebug() << "=== НАЧАЛО loadCheckboxState ===";
+
+    QStringList dayNames = {"Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"};
+
+    for (int rowIndex = 0; rowIndex < ui->tableWidget_3->rowCount(); ++rowIndex) {
+        int id = rowIndex + 1;
+
+        for (int dayIndex = 0; dayIndex < 7; ++dayIndex) {
+            QWidget* cellWidget = ui->tableWidget_3->cellWidget(rowIndex, dayIndex);
+            if (cellWidget == nullptr) {
+                qDebug() << "  ⚠️ cellWidget == nullptr в" << rowIndex << dayIndex;
+                continue;
+            }
+
+            QCheckBox* checkbox = cellWidget->findChild<QCheckBox*>();
+            if (checkbox == nullptr) {
+                qDebug() << "  ⚠️ checkbox == nullptr в" << rowIndex << dayIndex;
+                continue;
+            }
+
+            QString dayName = dayNames[dayIndex];
+            QString selectQuery = QString("SELECT %1 FROM Save_check WHERE id = ?").arg(dayName);
+
+            QSqlQuery query(db);
+            if (!query.prepare(selectQuery)) {
+                qDebug() << "  ❌ ОШИБКА подготовки:" << query.lastError().text();
+                continue;
+            }
+
+            query.addBindValue(id);
+
+            if (!query.exec()) {
+                qDebug() << "  ❌ ОШИБКА выполнения:" << query.lastError().text();
+                continue;
+            }
+
+            if (query.next()) {
+                int state = query.value(0).toInt();
+                bool isChecked = (state == 1);
+
+                // ⭐ Блокируем сигналы, чтобы не срабатывал connect при программной установке
+                checkbox->blockSignals(true);
+                checkbox->setChecked(isChecked);
+                checkbox->blockSignals(false);
+
+                // ⭐ СТИЛИЗУЙТЕ ВСЕ ЭЛЕМЕНТЫ В КОНТЕЙНЕРЕ
+                QString bgColor = isChecked ? "#00FF00" : "red";
+                QString styleSheet = QString(
+                                         "QWidget { background-color: %1; } "
+                                         "QCheckBox { background-color: %1; } "
+                                         "QLabel { background-color: %1; }"
+                                         ).arg(bgColor);
+
+                cellWidget->setStyleSheet(styleSheet);
+
+                qDebug() << "  Ячейка" << rowIndex << dayIndex
+                         << "| State:" << state
+                         << "| Checked:" << isChecked
+                         << "| Цвет:" << bgColor;
+            } else {
+                qDebug() << "  ⚠️ Нет результатов для" << rowIndex << dayIndex;
+            }
+        }
+    }
+
+    // ⭐ ОБНОВИТЕ ВЕСЬ VIEWPORT
+    ui->tableWidget_3->viewport()->update();
+
+    qDebug() << "=== КОНЕЦ loadCheckboxState ===\n";
 }

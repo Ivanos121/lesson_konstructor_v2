@@ -40,7 +40,7 @@ public:
     QString lection;
     QString lab_rab;
     QString pract_rab;
-    VertikalheaderView *horHeader;
+    VertikalheaderView *horHeader, *horHeader7, *horHeader8, *horHeader9;
 
 
     void refreshTableDisplay();
@@ -78,20 +78,19 @@ protected slots:
     QPair<int, int> determineTargetCell(int row, int column, const QString &combo2,
                                         const QString &combo3, int rowCount);
 
-
     void medgehorizontalcells();
     void aboutLessons();
     void deleteLesson();
     void ClickedLeftButton(int row, int column);
     void mergeCells();
     void splitCells();
-
     void onPageChanged2(int index);
     void printLessonDialog();
     void showPrintPreview();
     void onMonthChanged(int index);
     void onTabChanged(int index);
     void newUser();
+    void loadCheckboxState(int month, int year);
 
 private:
     newLesson *rsc;
