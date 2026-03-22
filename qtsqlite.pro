@@ -13,6 +13,7 @@ DEFINES += PROJECT_PATH=\\\"$$PWD\\\"
 SOURCES += \
     aboutlesson.cpp \
     add_lesson.cpp \
+    addline.cpp \
     main.cpp \
     mainwindow.cpp \
     mergedheader.cpp \
@@ -23,6 +24,7 @@ SOURCES += \
 HEADERS += \
     aboutlesson.h \
     add_lesson.h \
+    addline.h \
     mainwindow.h \
     mergedheader.h \
     newlesson.h \
@@ -32,6 +34,7 @@ HEADERS += \
 FORMS += \
     aboutlesson.ui \
     add_lesson.ui \
+    addline.ui \
     mainwindow.ui \
     newlesson.ui \
     newuser.ui

@@ -27,6 +27,27 @@ QString lesson_name;
 QString userSurname;
 QString userPosition;
 
+double lections;
+double lab_rabs;
+double pract_rabs;
+double mrs;
+double individ_zad;
+double kurs_rab;
+double konsult;
+double recenz;
+double zachet;
+double exam;
+double ucheb_pract;
+double zavod_pract;
+double diplom_proect;
+double gek_gak;
+double aspirant;
+double sum_semestr;
+double sum_year;
+QString subject_name;
+
+
+
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
     , ui(new Ui::MainWindow)
@@ -229,6 +250,7 @@ MainWindow::MainWindow(QWidget *parent)
     connect(ui->medgeHorizontalCells, &QAction::triggered, this, &MainWindow::medgehorizontalcells);
     connect(ui->tableWidget, &QTableWidget::cellDoubleClicked, this, &MainWindow::ClickedLeftButton);
     connect(ui->tableWidget_2, &QTableWidget::cellDoubleClicked, this, &MainWindow::ClickedLeftButton);
+    connect(ui->tableWidget_4, &QTableWidget::cellDoubleClicked, this, &MainWindow::ClickedLeftButton2);
 
     connect(ui->medgeCells, &QAction::triggered, this, &MainWindow::mergeCells);
     connect(ui->splitCells, &QAction::triggered, this, &MainWindow::splitCells);
@@ -349,6 +371,83 @@ MainWindow::MainWindow(QWidget *parent)
     item->setBackground(QColor(0x00FF00));
 
     ui->tableWidget_6->update();
+
+
+    //======НАСТРОЙКА TABLEWIDGET_4===============
+
+    ui->tableWidget_4->setRowCount(8);
+    ui->tableWidget_4->setColumnCount(17);
+
+    horHeader4 = new VertikalheaderView(Qt::Horizontal, ui->tableWidget_4);
+    ui->tableWidget_4->setHorizontalHeader(horHeader4);
+
+    QStringList horizontalTexts4 = {
+                                    "Лекции",
+                                    "Лабораторные работы",
+                                    "Практические занятия",
+                                    "МРС",
+                                    "Индивидуальные занятия",
+                                    "Курсовое проектирование",
+                                    "Консультации",
+                                    "Рецензирование",
+                                    "Зачеты",
+                                    "Экзамены",
+                                    "Учебная практика",
+                                    "Производственная практика",
+                                    "Дипломное проектирование",
+                                    "ГЭК/ГАК",
+                                    "Аспирантура/Маг",
+                                    "Итого часов по семестрам",
+                                    "Итого часов за год"
+    };
+
+    ui->tableWidget_4->setHorizontalHeaderLabels(horizontalTexts4);
+
+    QString n1 = " ";
+    QString n2 = "строка 1";
+    QString n3 = "строка 1";
+    QString n4 = "строка 1";
+    QString n5 = "строка 1";
+    QString n6 = "строка 1";
+
+    QStringList vertikalTexts4 = {n1, n2, n3, n4, n5, n6,
+        "Итого по плану",
+        "Итого за семестр"
+    };
+
+    ui->tableWidget_4->setVerticalHeaderLabels(vertikalTexts4);
+    ui->tableWidget_4->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
+
+    for (int col = 0; col < ui->tableWidget_4->columnCount(); ++col)
+    {
+        QTableWidgetItem *item = ui->tableWidget_4->item(6, col);
+
+        // Если ячейка пустая, её нужно создать, иначе метод item() вернет 0
+        if (!item) {
+            item = new QTableWidgetItem();
+            ui->tableWidget_4->setItem(6, col, item);
+        }
+
+        item->setBackground(QColor(0x00FF00));
+    }
+    ui->tableWidget_4->update();
+
+    ui->tableWidget_4->setSpan(0, 0, 1, 17);
+    QTableWidgetItem *item4 = new QTableWidgetItem("Осенний семестр");
+    item4->setTextAlignment(Qt::AlignCenter);
+    item4->setData(Qt::UserRole, "header"); // Метка заголовка
+    ui->tableWidget_4->setItem(0, 0, item4);
+    item4->setBackground(QColor(0x00FF00));
+
+    ui->tableWidget_4->setSpan(3, 0, 1, 17);
+    QTableWidgetItem *item41 = new QTableWidgetItem("Весенний семестр");
+    item41->setTextAlignment(Qt::AlignCenter);
+    item41->setData(Qt::UserRole, "header"); // Метка заголовка
+    ui->tableWidget_4->setItem(3, 0, item41);
+    item41->setBackground(QColor(0x00FF00));
+
+    connect(ui->addLine, &QAction::triggered, this, &MainWindow::addLine);
+    connect(ui->deleteLine, &QAction::triggered, this, &MainWindow::removeLine);
 
     //======НАСТРОЙКА TABLEWIDGET_7===============
 
@@ -479,7 +578,7 @@ MainWindow::MainWindow(QWidget *parent)
     //======НАСТРОЙКА TABLEWIDGET_9===============
 
     ui->tableWidget_9->setRowCount(8);
-    ui->tableWidget_9->setColumnCount(13);
+    ui->tableWidget_9->setColumnCount(17);
 
     horHeader9 = new VertikalheaderView(Qt::Horizontal, ui->tableWidget_9);
     ui->tableWidget_9->setHorizontalHeader(horHeader9);
@@ -495,12 +594,18 @@ MainWindow::MainWindow(QWidget *parent)
         "Рецензирование",
         "Зачеты",
         "Экзамены",
+        "Учебная практика",
         "Производственная практика",
         "Дипломное проектирование",
-        "Итого, часов"
+        "ГЭК/ГАК",
+        "Аспирантура/Маг",
+        "Итого часов по семестрам",
+        "Итого часов за год"
     };
 
     ui->tableWidget_9->setHorizontalHeaderLabels(horizontalTexts9);
+
+
 
     QStringList vertikalTexts9 = {
         "Февраль",
@@ -529,6 +634,81 @@ MainWindow::MainWindow(QWidget *parent)
         item->setBackground(QColor(0x00FF00));
     }
     ui->tableWidget_9->update();
+
+    //======НАСТРОЙКА TABLEWIDGET_10===============
+
+    ui->tableWidget_10->setRowCount(8);
+    ui->tableWidget_10->setColumnCount(17);
+
+    horHeader10 = new VertikalheaderView(Qt::Horizontal, ui->tableWidget_10);
+    ui->tableWidget_10->setHorizontalHeader(horHeader10);
+
+    QStringList horizontalTexts10 = {
+                                     "Лекции",
+                                     "Лабораторные работы",
+                                     "Практические занятия",
+                                     "МРС",
+                                     "Индивидуальные занятия",
+                                     "Курсовое проектирование",
+                                     "Консультации",
+                                     "Рецензирование",
+                                     "Зачеты",
+                                     "Экзамены",
+                                     "Учебная практика",
+                                     "Производственная практика",
+                                     "Дипломное проектирование",
+                                     "ГЭК/ГАК",
+                                     "Аспирантура/Маг",
+                                     "Итого часов по семестрам",
+                                     "Итого часов за год"
+    };
+
+    ui->tableWidget_10->setHorizontalHeaderLabels(horizontalTexts10);
+
+    QStringList vertikalTexts10 = {
+        "Февраль",
+        "Март",
+        "Апрель",
+        "Май",
+        "Июнь",
+        "Июль",
+        "Итого по плану",
+        "Итого за семестр"
+    };
+
+    ui->tableWidget_10->setVerticalHeaderLabels(vertikalTexts10);
+    ui->tableWidget_10->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
+
+    for (int col = 0; col < ui->tableWidget_10->columnCount(); ++col)
+    {
+        QTableWidgetItem *item = ui->tableWidget_10->item(6, col);
+
+        // Если ячейка пустая, её нужно создать, иначе метод item() вернет 0
+        if (!item) {
+            item = new QTableWidgetItem();
+            ui->tableWidget_10->setItem(6, col, item);
+        }
+
+        item->setBackground(QColor(0x00FF00));
+    }
+    ui->tableWidget_10->update();
+
+    ui->tableWidget_10->setSpan(0, 0, 1, 17);
+    QTableWidgetItem *item10 = new QTableWidgetItem("Осенний семестр");
+    item10->setTextAlignment(Qt::AlignCenter);
+    item10->setData(Qt::UserRole, "header"); // Метка заголовка
+    ui->tableWidget_10->setItem(0, 0, item10);
+    item10->setBackground(QColor(0x00FF00));
+
+    ui->tableWidget_10->setSpan(3, 0, 1, 17);
+    QTableWidgetItem *item101 = new QTableWidgetItem("Весенний семестр");
+    item101->setTextAlignment(Qt::AlignCenter);
+    item101->setData(Qt::UserRole, "header"); // Метка заголовка
+    ui->tableWidget_10->setItem(3, 0, item101);
+    item101->setBackground(QColor(0x00FF00));
+
+    // connect(ui->addLine, &QAction::triggered, this, &MainWindow::addLine);
+    // connect(ui->deleteLine, &QAction::triggered, this, &MainWindow::removeLine);
 
     //======НАСТРОЙКА TABLEWIDGET_2===============
 
@@ -3396,4 +3576,106 @@ void MainWindow::loadCheckboxState(int month, int year)
     ui->tableWidget_3->viewport()->update();
 
     qDebug() << "=== КОНЕЦ loadCheckboxState ===\n";
+}
+
+void MainWindow::addLine()
+{
+    QTableWidget *table = getCurrentTable();
+    if (!table) return;
+
+    int row = table->currentRow();
+    int total = table->rowCount();
+
+    // Проверки: выделена ли строка, не заголовок ли это (span > 1)
+    // и не входит ли она в последние 3 строки
+    if (row < 0 || table->columnSpan(row, 0) > 1 || row >= total - 2) {
+        return;
+    }
+
+    int insertPos = row + 1;
+    table->insertRow(insertPos);
+
+    // Создаем пустой элемент и переносим фокус
+    table->setItem(insertPos, 0, new QTableWidgetItem(""));
+    table->setCurrentCell(insertPos, 0);
+}
+
+void MainWindow::removeLine() {
+    QTableWidget *table = getCurrentTable();
+    if (!table) return;
+
+    int row = table->currentRow();
+    int total = table->rowCount();
+
+    // Те же правила безопасности: нельзя удалять заголовки и последние 3 строки
+    if (row < 0 || table->columnSpan(row, 0) > 1 || row >= total - 2) {
+        return;
+    }
+
+    table->removeRow(row);
+}
+
+QTableWidget* MainWindow::getCurrentTable()
+{
+    int index = ui->tabWidget_3->currentIndex();
+
+    if (index == 0) return ui->tableWidget_4;
+    if (index == 1) return ui->tableWidget_10;
+
+    return nullptr; // Если есть другие вкладки без этих таблиц
+}
+
+void MainWindow::ClickedLeftButton2(int row, int column)
+{
+    if (editingEnabled) return;
+
+    QScreen *screen = QGuiApplication::primaryScreen();
+    rsc5 = new AddLine(this);
+    rsc5->setWindowTitle("Введите данные для ячейки");
+    rsc5->setGeometry(QStyle::alignedRect(Qt::LeftToRight, Qt::AlignCenter, rsc5->size(), screen->geometry()));
+
+    // 1. Запускаем диалог. Внутри AddLine вы должны присваивать значения глобальным переменным
+    if (rsc5->exec() != QDialog::Accepted) {
+        rsc5->deleteLater();
+        return;
+    }
+
+    // 2. Определяем строку (используем ту, по которой кликнули)
+    if (row < 0) row = ui->tableWidget_4->currentRow();
+
+    qDebug() << "Result" << row;
+    if (row < 0) return; // Защита от пустого выделения
+
+    // 3. Вставка данных с принудительной конвертацией в строку
+    // Используем QString::number(), если переменные — int или double
+    ui->tableWidget_4->setItem(row, 0, new QTableWidgetItem(QString::number(lections)));
+    ui->tableWidget_4->setItem(row, 1, new QTableWidgetItem(QString::number(lab_rabs)));
+    ui->tableWidget_4->setItem(row, 2, new QTableWidgetItem(QString::number(pract_rabs)));
+    ui->tableWidget_4->setItem(row, 3, new QTableWidgetItem(QString::number(mrs)));
+    ui->tableWidget_4->setItem(row, 4, new QTableWidgetItem(QString::number(individ_zad)));
+    ui->tableWidget_4->setItem(row, 5, new QTableWidgetItem(QString::number(kurs_rab)));
+    ui->tableWidget_4->setItem(row, 6, new QTableWidgetItem(QString::number(konsult)));
+    ui->tableWidget_4->setItem(row, 7, new QTableWidgetItem(QString::number(recenz)));
+    ui->tableWidget_4->setItem(row, 8, new QTableWidgetItem(QString::number(zachet)));
+    ui->tableWidget_4->setItem(row, 9, new QTableWidgetItem(QString::number(exam)));
+    ui->tableWidget_4->setItem(row, 10, new QTableWidgetItem(QString::number(ucheb_pract)));
+    ui->tableWidget_4->setItem(row, 11, new QTableWidgetItem(QString::number(zavod_pract)));
+    ui->tableWidget_4->setItem(row, 12, new QTableWidgetItem(QString::number(diplom_proect)));
+    ui->tableWidget_4->setItem(row, 13, new QTableWidgetItem(QString::number(gek_gak)));
+    ui->tableWidget_4->setItem(row, 14, new QTableWidgetItem(QString::number(aspirant)));
+    ui->tableWidget_4->setItem(row, 15, new QTableWidgetItem(QString::number(sum_semestr)));
+    ui->tableWidget_4->setItem(row, 16, new QTableWidgetItem(QString::number(sum_year)));
+
+
+
+    // // 2. ЗАПИСЬ В ВЕРТИКАЛЬНЫЙ ХИДЕР
+    // ui->tableWidget_4->model()->setHeaderData(row, Qt::Vertical, "Ваш Текст", Qt::DisplayRole);
+    // // После этого нужно принудительно обновить хидер, так как он сам может не заметить изменений
+    // ui->tableWidget_4->verticalHeader()->viewport()->update();
+
+    QTableWidgetItem *headerItem = new QTableWidgetItem(QString(subject_name));
+    headerItem->setTextAlignment(Qt::AlignCenter);
+    ui->tableWidget_4->setVerticalHeaderItem(row, headerItem);
+
+    rsc5->deleteLater();
 }

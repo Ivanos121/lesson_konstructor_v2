@@ -8,6 +8,7 @@
 #include "add_lesson.h"
 #include "ui_mainwindow.h"
 #include "vertikalheaderview.h"
+#include "addline.h"
 
 #include <QListWidget>
 #include <QMainWindow>
@@ -40,7 +41,8 @@ public:
     QString lection;
     QString lab_rab;
     QString pract_rab;
-    VertikalheaderView *horHeader, *horHeader7, *horHeader8, *horHeader9;
+    VertikalheaderView *horHeader, *horHeader7, *horHeader8, *horHeader9, *horHeader4,
+        *horHeader10 ;
 
 
     void refreshTableDisplay();
@@ -64,6 +66,7 @@ protected:
     void setColumnAndRowSizes(QTableWidget *tableWidget);
     void updateTable(int month, int year);
     bool isValidColumn(const QString &columnName) const;
+    QTableWidget *getCurrentTable();
 
 protected slots:
     //void onPageChanged(int index);
@@ -91,10 +94,14 @@ protected slots:
     void onTabChanged(int index);
     void newUser();
     void loadCheckboxState(int month, int year);
+    void addLine();
 
+    void removeLine();
+    void ClickedLeftButton2(int row, int column);
 private:
     newLesson *rsc;
     Add_lesson *rsc2;
+    AddLine *rsc5;
     NewUser *rsc4;
     bool isModified = false;
     bool editingEnabled = false;
