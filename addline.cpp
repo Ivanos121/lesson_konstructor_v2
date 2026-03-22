@@ -53,6 +53,7 @@ void AddLine::apply_button()
     aspirant= ui->lineEdit_16->text().toDouble();
     sum_semestr= ui->lineEdit_13->text().toDouble();
     sum_year= ui->lineEdit_10->text().toDouble();
+    subject_name = ui->lineEdit_18->text();
     accept();
 }
 

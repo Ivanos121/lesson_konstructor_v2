@@ -16,6 +16,8 @@ public:
     explicit MergedHeader(Qt::Orientation orientation, QWidget *parent = nullptr);
     void setMergeRanges(const QList<QPair<int, int>> &ranges);
     void setHeaderTexts(const QStringList &texts);
+    QStringList getHeaderTexts() const;
+    void setHeaderTextAt(int index, const QString &text);
 
 protected:
     void paintEvent(QPaintEvent *event) override;

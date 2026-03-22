@@ -404,11 +404,11 @@ MainWindow::MainWindow(QWidget *parent)
     ui->tableWidget_4->setHorizontalHeaderLabels(horizontalTexts4);
 
     QString n1 = " ";
-    QString n2 = "строка 1";
-    QString n3 = "строка 1";
-    QString n4 = "строка 1";
-    QString n5 = "строка 1";
-    QString n6 = "строка 1";
+    QString n2 = "Дисциплина";
+    QString n3 = "Дисциплина";
+    QString n4 = " ";
+    QString n5 = "Дисциплина";
+    QString n6 = "Дисциплина";
 
     QStringList vertikalTexts4 = {n1, n2, n3, n4, n5, n6,
         "Итого по плану",
@@ -448,6 +448,21 @@ MainWindow::MainWindow(QWidget *parent)
 
     connect(ui->addLine, &QAction::triggered, this, &MainWindow::addLine);
     connect(ui->deleteLine, &QAction::triggered, this, &MainWindow::removeLine);
+
+    QTableWidgetItem *vHeaderItem = new QTableWidgetItem(" ");
+    vHeaderItem->setBackground(QColor(0x00FF00));
+    vHeaderItem->setTextAlignment(Qt::AlignLeft);
+    ui->tableWidget_4->setVerticalHeaderItem(0, vHeaderItem);
+
+    QTableWidgetItem *vHeaderItem3 = new QTableWidgetItem(" ");
+    vHeaderItem3->setBackground(QColor(0x00FF00));
+    vHeaderItem3->setTextAlignment(Qt::AlignLeft);
+    ui->tableWidget_4->setVerticalHeaderItem(3, vHeaderItem3);
+
+    QTableWidgetItem *vHeaderItem6 = new QTableWidgetItem("Итого по плану");
+    vHeaderItem6->setBackground(QColor(0x00FF00));
+    vHeaderItem6->setTextAlignment(Qt::AlignLeft);
+    ui->tableWidget_4->setVerticalHeaderItem(6, vHeaderItem6);
 
     //======НАСТРОЙКА TABLEWIDGET_7===============
 
@@ -665,18 +680,19 @@ MainWindow::MainWindow(QWidget *parent)
 
     ui->tableWidget_10->setHorizontalHeaderLabels(horizontalTexts10);
 
-    QStringList vertikalTexts10 = {
-        "Февраль",
-        "Март",
-        "Апрель",
-        "Май",
-        "Июнь",
-        "Июль",
+    QString n11 = " ";
+    QString n21 = "Дисциплина";
+    QString n31 = "Дисциплина";
+    QString n41 = " ";
+    QString n51 = "Дисциплина";
+    QString n61 = "Дисциплина";
+
+    QStringList vertikalTexts41 = {n11, n21, n31, n41, n51, n61,
         "Итого по плану",
         "Итого за семестр"
     };
 
-    ui->tableWidget_10->setVerticalHeaderLabels(vertikalTexts10);
+    ui->tableWidget_10->setVerticalHeaderLabels(vertikalTexts41);
     ui->tableWidget_10->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
 
     for (int col = 0; col < ui->tableWidget_10->columnCount(); ++col)
@@ -707,8 +723,20 @@ MainWindow::MainWindow(QWidget *parent)
     ui->tableWidget_10->setItem(3, 0, item101);
     item101->setBackground(QColor(0x00FF00));
 
-    // connect(ui->addLine, &QAction::triggered, this, &MainWindow::addLine);
-    // connect(ui->deleteLine, &QAction::triggered, this, &MainWindow::removeLine);
+    QTableWidgetItem *vHeaderItem1 = new QTableWidgetItem(" ");
+    vHeaderItem1->setBackground(QColor(0x00FF00));
+    vHeaderItem1->setTextAlignment(Qt::AlignLeft);
+    ui->tableWidget_10->setVerticalHeaderItem(0, vHeaderItem1);
+
+    QTableWidgetItem *vHeaderItem31 = new QTableWidgetItem(" ");
+    vHeaderItem31->setBackground(QColor(0x00FF00));
+    vHeaderItem31->setTextAlignment(Qt::AlignLeft);
+    ui->tableWidget_10->setVerticalHeaderItem(3, vHeaderItem31);
+
+    QTableWidgetItem *vHeaderItem61 = new QTableWidgetItem("Итого по плану");
+    vHeaderItem61->setBackground(QColor(0x00FF00));
+    vHeaderItem61->setTextAlignment(Qt::AlignLeft);
+    ui->tableWidget_10->setVerticalHeaderItem(6, vHeaderItem61);
 
     //======НАСТРОЙКА TABLEWIDGET_2===============
 
@@ -3586,8 +3614,7 @@ void MainWindow::addLine()
     int row = table->currentRow();
     int total = table->rowCount();
 
-    // Проверки: выделена ли строка, не заголовок ли это (span > 1)
-    // и не входит ли она в последние 3 строки
+    // Проверки: выделение, не заголовок (span) и не последние строки
     if (row < 0 || table->columnSpan(row, 0) > 1 || row >= total - 2) {
         return;
     }
@@ -3595,8 +3622,18 @@ void MainWindow::addLine()
     int insertPos = row + 1;
     table->insertRow(insertPos);
 
-    // Создаем пустой элемент и переносим фокус
+    // 1. Устанавливаем "Дисциплина" в ВЕРТИКАЛЬНЫЙ заголовок новой строки
+    QTableWidgetItem *vHeaderItem = new QTableWidgetItem("Дисциплина");
+    vHeaderItem->setTextAlignment(Qt::AlignLeft); // По центру
+    table->setVerticalHeaderItem(insertPos, vHeaderItem);
+
+    // 2. В саму ячейку таблицы ставим пустой элемент (чтобы она была готова к работе)
     table->setItem(insertPos, 0, new QTableWidgetItem(""));
+
+    // 3. Автоматически расширяем заголовок под текст, если он длинный
+    table->verticalHeader()->setSectionResizeMode(QHeaderView::ResizeToContents);
+
+    // 4. Переносим фокус на новую ячейку
     table->setCurrentCell(insertPos, 0);
 }
 
@@ -3666,16 +3703,11 @@ void MainWindow::ClickedLeftButton2(int row, int column)
     ui->tableWidget_4->setItem(row, 15, new QTableWidgetItem(QString::number(sum_semestr)));
     ui->tableWidget_4->setItem(row, 16, new QTableWidgetItem(QString::number(sum_year)));
 
-
-
-    // // 2. ЗАПИСЬ В ВЕРТИКАЛЬНЫЙ ХИДЕР
-    // ui->tableWidget_4->model()->setHeaderData(row, Qt::Vertical, "Ваш Текст", Qt::DisplayRole);
-    // // После этого нужно принудительно обновить хидер, так как он сам может не заметить изменений
-    // ui->tableWidget_4->verticalHeader()->viewport()->update();
-
-    QTableWidgetItem *headerItem = new QTableWidgetItem(QString(subject_name));
-    headerItem->setTextAlignment(Qt::AlignCenter);
-    ui->tableWidget_4->setVerticalHeaderItem(row, headerItem);
+    // 1. Устанавливаем текст в вертикальный заголовок для конкретной строки
+    QTableWidgetItem *vHeaderItem = new QTableWidgetItem(subject_name);
+    vHeaderItem->setTextAlignment(Qt::AlignLeft);
+    ui->tableWidget_4->setVerticalHeaderItem(row, vHeaderItem);
+    ui->tableWidget_4->verticalHeader()->setSectionResizeMode(row, QHeaderView::ResizeToContents);
 
     rsc5->deleteLater();
 }

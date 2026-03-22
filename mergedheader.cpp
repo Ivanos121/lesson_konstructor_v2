@@ -147,8 +147,10 @@ void MergedHeader::paintSection(QPainter *painter, const QRect &rect, int logica
     // Проверяем наведение
     bool isHovered = false;
     if (mergeIndex != -1) {
-        for (int j = mergeStart; j < mergeStart + mergeSpan; ++j) {
-            if (m_hoveredSection == j) {
+        for (int j = mergeStart; j < mergeStart + mergeSpan; ++j)
+        {
+            if (m_hoveredSection == j)
+            {
                 isHovered = true;
                 break;
             }
@@ -158,9 +160,12 @@ void MergedHeader::paintSection(QPainter *painter, const QRect &rect, int logica
     }
 
     // Рисуем фон
-    if (isHovered) {
+    if (isHovered)
+    {
         painter->fillRect(drawRect, palette().color(QPalette::Highlight));
-    } else {
+    }
+    else
+    {
         painter->fillRect(drawRect, palette().color(QPalette::Button));
     }
 
@@ -174,11 +179,16 @@ void MergedHeader::paintSection(QPainter *painter, const QRect &rect, int logica
     painter->setFont(font());
 
     QString text;
-    if (mergeIndex != -1 && mergeIndex < headerTexts.size()) {
+    if (mergeIndex != -1 && mergeIndex < headerTexts.size())
+    {
         text = headerTexts.at(mergeIndex);
-    } else if (mergeIndex == -1) {
+    }
+    else if (mergeIndex == -1)
+    {
         text = model()->headerData(logicalIndex, m_orientation, Qt::DisplayRole).toString();
-    } else {
+    }
+    else
+    {
         text = QString("Объединение %1").arg(mergeIndex + 1);
     }
 
@@ -190,14 +200,17 @@ void MergedHeader::mouseMoveEvent(QMouseEvent *event)
 {
     int section = logicalIndexAt(event->pos());
 
-    if (section != m_hoveredSection) {
-        if (m_hoveredSection != -1) {
+    if (section != m_hoveredSection)
+    {
+        if (m_hoveredSection != -1)
+        {
             updateMergedRange(m_hoveredSection);
         }
 
         m_hoveredSection = section;
 
-        if (m_hoveredSection != -1) {
+        if (m_hoveredSection != -1)
+        {
             updateMergedRange(m_hoveredSection);
         }
     }
@@ -207,7 +220,8 @@ void MergedHeader::mouseMoveEvent(QMouseEvent *event)
 
 void MergedHeader::leaveEvent(QEvent *event)
 {
-    if (m_hoveredSection != -1) {
+    if (m_hoveredSection != -1)
+    {
         updateMergedRange(m_hoveredSection);
         m_hoveredSection = -1;
     }
@@ -228,7 +242,8 @@ void MergedHeader::paintEvent(QPaintEvent *event)
         int viewportHeight = viewport()->height();
 
         // Рисуем ВСЕ секции, но с учётом скроллинга
-        for (int i = 0; i < sectionCount; ++i) {
+        for (int i = 0; i < sectionCount; ++i)
+        {
             if (isSectionHidden(i)) {
                 continue;
             }
@@ -238,7 +253,8 @@ void MergedHeader::paintEvent(QPaintEvent *event)
             int adjustedPos = pos - scrollOffset;
 
             // Проверяем, пересекается ли секция с видимой областью
-            if (adjustedPos + size < 0 || adjustedPos > viewportHeight) {
+            if (adjustedPos + size < 0 || adjustedPos > viewportHeight)
+            {
                 continue;  // Секция полностью за пределами viewport
             }
 
@@ -268,9 +284,12 @@ void MergedHeader::onTableScrolled()
 void MergedHeader::wheelEvent(QWheelEvent *event)
 {
     // Передаём событие скроллирования таблице
-    if (m_tableWidget) {
+    if (m_tableWidget)
+    {
         QApplication::sendEvent(m_tableWidget->verticalScrollBar(), event);
-    } else {
+    }
+    else
+    {
         QHeaderView::wheelEvent(event);
     }
 }
@@ -279,4 +298,18 @@ void MergedHeader::mousePressEvent(QMouseEvent *event)
 {
     // Не позволяем заголовку обрабатывать скроллирование
     QHeaderView::mousePressEvent(event);
+}
+
+QStringList MergedHeader::getHeaderTexts() const
+{
+    return headerTexts;
+}
+
+void MergedHeader::setHeaderTextAt(int index, const QString &text)
+{
+    if (index >= 0 && index < headerTexts.size())
+    {
+        headerTexts[index] = text;
+        this->viewport()->update(); // Перерисовать хидер
+    }
 }
