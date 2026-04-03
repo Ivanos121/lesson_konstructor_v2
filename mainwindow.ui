@@ -18,7 +18,7 @@
     <item row="0" column="0">
      <widget class="QTabWidget" name="tabWidget">
       <property name="currentIndex">
-       <number>0</number>
+       <number>1</number>
       </property>
       <widget class="QWidget" name="tab">
        <attribute name="title">
@@ -213,6 +213,7 @@
    </attribute>
    <addaction name="addUser"/>
    <addaction name="newTable"/>
+   <addaction name="loadDoc"/>
    <addaction name="saveDoc"/>
    <addaction name="separator"/>
    <addaction name="print_preview"/>
@@ -221,11 +222,14 @@
    <addaction name="medgeCells"/>
    <addaction name="splitCells"/>
    <addaction name="deleteLesson"/>
+   <addaction name="separator"/>
    <addaction name="save_check"/>
    <addaction name="load_check"/>
+   <addaction name="openCurrentCalendar"/>
    <addaction name="separator"/>
    <addaction name="addLine"/>
    <addaction name="deleteLine"/>
+   <addaction name="separator"/>
   </widget>
   <action name="newTable">
    <property name="icon">
@@ -435,6 +439,28 @@
    </property>
    <property name="text">
     <string>Удалить строку</string>
+   </property>
+   <property name="menuRole">
+    <enum>QAction::MenuRole::NoRole</enum>
+   </property>
+  </action>
+  <action name="openCurrentCalendar">
+   <property name="icon">
+    <iconset theme="QIcon::ThemeIcon::GoHome"/>
+   </property>
+   <property name="text">
+    <string>Сегодня</string>
+   </property>
+   <property name="menuRole">
+    <enum>QAction::MenuRole::NoRole</enum>
+   </property>
+  </action>
+  <action name="loadDoc">
+   <property name="icon">
+    <iconset theme="QIcon::ThemeIcon::DocumentOpen"/>
+   </property>
+   <property name="text">
+    <string>Загрузить данные</string>
    </property>
    <property name="menuRole">
     <enum>QAction::MenuRole::NoRole</enum>
