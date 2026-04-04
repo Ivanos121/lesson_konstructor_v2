@@ -244,8 +244,8 @@ MainWindow::MainWindow(QWidget *parent)
 
     connect(lessonList, QOverload<int>::of(&QComboBox::currentIndexChanged), this, &MainWindow::onPageChanged2);
     connect(ui->newTable, &QAction::triggered, this, &MainWindow::NewTable);
-    connect(ui->saveDoc, &QAction::triggered, this, &MainWindow::saveBase);
-    connect(ui->loadDoc, &QAction::triggered, this, &MainWindow::loadBase);
+    //connect(ui->saveDoc, &QAction::triggered, this, &MainWindow::saveBase);
+    //connect(ui->loadDoc, &QAction::triggered, this, &MainWindow::loadBase);
     connect(ui->closeApp, &QAction::triggered, this, &MainWindow::close);
     connect(ui->tableWidget, &QTableWidget::itemChanged, this, &MainWindow::onItemChanged);
     connect(ui->openLesson, &QAction::triggered, this, &MainWindow::openLesson);
@@ -264,6 +264,49 @@ MainWindow::MainWindow(QWidget *parent)
     connect(ui->tabWidget, &QTabWidget::currentChanged, this, &MainWindow::onTabChanged);
     connect(ui->new_user, &QAction::triggered, this, &MainWindow::newUser);
     connect(ui->addUser, &QAction::triggered, this, &MainWindow::newUser);
+
+    connect(ui->saveDoc, &QAction::triggered, this, [this]() {
+        // 1. Получаем индекс текущей вкладки
+        int currentIndex = ui->tabWidget->currentIndex();
+
+        QTableWidget* activeTable = nullptr;
+        QString dbName;
+
+        // 2. Определяем таблицу и имя БД по индексу вкладки (самый надежный способ)
+        if (currentIndex == 0) { // Предположим, 0 - Весна
+            activeTable = ui->tableWidget;
+            dbName = "lessons_spring_semester";
+        }
+        else if (currentIndex == 1) { // 1 - Осень
+            activeTable = ui->tableWidget_2;
+            dbName = "lessons_autumn_semester";
+        }
+
+        // 3. Вызываем сохранение, если таблица определена
+        if (activeTable) {
+            saveBase(activeTable, dbName);
+            // Дополнительно можно вывести уведомление, что именно сохранено
+            qDebug() << "Сохранение завершено для таблицы:" << dbName;
+        }
+    });
+
+    connect(ui->loadDoc, &QAction::triggered, this, [this]() {
+        // 1. Определяем, какой виджет сейчас открыт в tabWidget
+        QWidget* current = ui->tabWidget->currentWidget();
+        QTableWidget* activeTable = qobject_cast<QTableWidget*>(current);
+
+        if (activeTable) {
+            // 2. Определяем имя таблицы в БД для текущего виджета
+            QString dbName = (activeTable == ui->tableWidget)
+                                 ? "lessons_spring_semester"
+                                 : "lessons_autumn_semester";
+
+            // 3. Вызываем универсальную функцию загрузки
+            loadBase(activeTable, dbName);
+
+            message_action("Загрузка", QString("Данные обновлены для: %1").arg(dbName));
+        }
+    });
 
     // Подключаем месяц к общему методу syncCalendar
     connect(monthList, QOverload<int>::of(&QComboBox::currentIndexChanged),
@@ -329,6 +372,7 @@ MainWindow::MainWindow(QWidget *parent)
     //hideColums();
 
     adjustLabelFont();
+
 
     //======НАСТРОЙКА TABLEWIDGET_3======
 
@@ -858,9 +902,18 @@ MainWindow::MainWindow(QWidget *parent)
 
     //======НАСТРОЙКА TABLEWIDGET_2===============
 
-    ui->tableWidget_2->setRowCount(14);
+    ui->tableWidget_2->setRowCount(10);
     ui->tableWidget_2->setColumnCount(13);
 
+    for (int r = 0; r < ui->tableWidget_2->rowCount(); ++r)
+    {
+        for (int c = 0; c < ui->tableWidget_2->columnCount(); ++c)
+        {
+            QTableWidgetItem *item = new QTableWidgetItem();
+            item->setTextAlignment(Qt::AlignCenter);
+            ui->tableWidget_2->setItem(r, c, item);
+        }
+    }
 
     // Для ГОРИЗОНТАЛЬНОГО заголовка (столбцы)
     MergedHeader *horizontalHeader2 = new MergedHeader(Qt::Horizontal, ui->tableWidget_2);
@@ -903,10 +956,7 @@ MainWindow::MainWindow(QWidget *parent)
         {2, 2},   // строки 2-3
         {4, 2},   // строки 4-5
         {6, 2},   // строки 6-7
-        {8, 2},   // строки 4-5
-        {10, 2},   // строки 6-7
-        {12, 2},   // строки 6-7
-
+        {8, 2}   // строки 4-5
     };
 
     QStringList verticalTexts2 = {
@@ -914,10 +964,9 @@ MainWindow::MainWindow(QWidget *parent)
         "10.25 - 12.00",
         "12.30 - 14.05",
         "14.20 - 15.55",
-        "16.05 - 17.40",
-        "17.50 - 19.20",
-        "19.25 - 21.10"
+        "16.05 - 17.40"
     };
+
 
     verticalHeader2->setMergeRanges(verticalMerges2);
     verticalHeader2->setHeaderTexts(verticalTexts2);
@@ -929,12 +978,12 @@ MainWindow::MainWindow(QWidget *parent)
     ui->tableWidget_2->verticalHeader()->setSectionResizeMode(QHeaderView::Stretch);
     ui->tableWidget_2->hideColumn(0);
 
-    int totalRows = ui->tableWidget_2->rowCount();
+    // int totalRows = ui->tableWidget_2->rowCount();
 
-    for (int i = totalRows - 4; i < totalRows; ++i)
-    {
-        ui->tableWidget_2->setRowHidden(i, true);
-    }
+    // for (int i = totalRows - 4; i < totalRows; ++i)
+    // {
+    //     ui->tableWidget_2->setRowHidden(i, true);
+    // }
 
     //QTimer::singleShot(100, this, &MainWindow::loadBase);
 
@@ -943,7 +992,8 @@ MainWindow::MainWindow(QWidget *parent)
 
     // Вызываем построение сетки вручную ОДИН раз при старте
     //rebuildCalendarGrid(current.year(), current.month());
-    loadBase();
+    loadBase(ui->tableWidget, "lessons_spring_semester");
+    //loadBase(ui->tableWidget_2, "lessons_autumn_semester");
 }
 
 MainWindow::~MainWindow()
@@ -1834,8 +1884,347 @@ void MainWindow::mergeCells()
 
 void MainWindow::ClickedLeftButton(int row, int column)
 {
+    // if (editingEnabled)
+    //     return;
+
+    // QScreen *screen = QGuiApplication::primaryScreen();
+    // rsc2 = new Add_lesson(this);
+    // rsc2->setWindowTitle("Введите данные для ячейки");
+    // rsc2->setGeometry(
+    //     QStyle::alignedRect(
+    //         Qt::LeftToRight,
+    //         Qt::AlignCenter,
+    //         rsc2->size(),
+    //         screen->geometry()));
+
+    // QPair<int,int> key(row, column);
+
+    // // Если уже объединено — разъединяем
+    // if (mergedLefts_.contains(key))
+    // {
+    //     ui->tableWidget->setSpan(row, column, 1, 1);
+    //     if (column + 1 < ui->tableWidget->columnCount() && !ui->tableWidget->item(row, column+1))
+    //         ui->tableWidget->setItem(row, column+1, new QTableWidgetItem(""));
+    //     mergedLefts_.remove(key);
+    //     rsc2->deleteLater();
+    //     return;
+    // }
+
+    // // Выполняем диалог
+    // if (rsc2->exec() != QDialog::Accepted)
+    // {
+    //     rsc2->deleteLater();
+    //     return;
+    // }
+
+    // // Читаем данные
+    // QString comboChoice2 = rsc2->ui->comboBox_2->currentText().trimmed();
+    // QString comboChoice3 = rsc2->ui->comboBox_3->currentText().trimmed();
+    // QString combinedText = rsc2->text11 + "\n" + rsc2->text22 + "\n" + rsc2->text33 + "\n" + rsc2->text44;
+
+    // qDebug() << "\n=== ОТЛАДКА ===";
+    // qDebug() << "row=" << row << "column=" << column;
+    // qDebug() << "comboBox_2='" << comboChoice2 << "'";
+    // qDebug() << "comboBox_3='" << comboChoice3 << "'";
+
+    // // ПРАВИЛЬНАЯ логика чётности: нечётные индексы (1, 3, 5...)
+    // bool isRowOdd = (row % 2 == 1);    // row 1, 3, 5...
+    // bool isColOdd = (column % 2 == 1); // column 1, 3, 5...
+    // qDebug() << "isRowOdd=" << isRowOdd << "isColOdd=" << isColOdd;
+
+    // int targetRow = row;
+    // bool shouldMergeHorizontal = false;
+    // bool shouldMergeVertical = false;
+
+    // // СЦЕНАРИЙ 1: none + (Верхняя или Нижняя неделя)
+    // if (comboChoice2 == "none" &&
+    //     (comboChoice3.contains("Верхняя") || comboChoice3.contains("Нижняя")))
+    // {
+    //     qDebug() << "СЦЕНАРИЙ 1: none + неделя";
+    //     shouldMergeHorizontal = true;
+
+    //     if (comboChoice3.contains("Верхняя"))
+    //     {
+    //         targetRow = row;
+    //         qDebug() << "Верхняя неделя — остаёмся в строке" << targetRow;
+    //     }
+    //     else if (comboChoice3.contains("Нижняя"))
+    //     {
+    //         if (isRowOdd)
+    //         {
+    //             // Нечётная строка (1, 3, 5...) → переходим в чётную (2, 4, 6...)
+    //             if (row + 1 < ui->tableWidget->rowCount())
+    //             {
+    //                 targetRow = row + 1;
+    //                 qDebug() << "Нечётная строка, Нижняя неделя — вниз на" << targetRow;
+    //             }
+    //             else
+    //             {
+    //                 targetRow = row - 1;
+    //                 qDebug() << "Последняя строка, Нижняя неделя — вверх на" << targetRow;
+    //             }
+    //         }
+    //         else
+    //         {
+    //             // Чётная строка (0, 2, 4...) → переходим в нечётную (1, 3, 5...)
+    //             if (row - 1 >= 0)
+    //             {
+    //                 targetRow = row - 1;
+    //                 qDebug() << "Чётная строка, Нижняя неделя — вверх на" << targetRow;
+    //             }
+    //             else
+    //             {
+    //                 targetRow = row + 1;
+    //                 qDebug() << "Первая строка, Нижняя неделя — вниз на" << targetRow;
+    //             }
+    //         }
+    //     }
+    // }
+    // // СЦЕНАРИЙ 2: 1-я подгруппа раз в 2 недели + Верхняя/Нижняя неделя
+    // else if (comboChoice2.contains("1-я подгруппа раз в 2 недели"))
+    // {
+    //     qDebug() << "СЦЕНАРИЙ 2: 1-я подгруппа раз в 2 недели";
+
+    //     // Должна быть чётная строка (индекс 0, 2, 4...) И нечётный столбец (индекс 1, 3, 5...)
+    //     if (!isRowOdd && isColOdd)
+    //     {
+    //         if (comboChoice3.contains("Верхняя"))
+    //         {
+    //             targetRow = row;
+    //             qDebug() << "Верхняя неделя, чётная строка и нечётный столбец — остаёмся в" << targetRow;
+    //             // shouldMergeHorizontal остаётся false
+    //         }
+    //         else if (comboChoice3.contains("Нижняя"))
+    //         {
+    //             if (row + 1 < ui->tableWidget->rowCount())
+    //             {
+    //                 targetRow = row + 1;
+    //                 qDebug() << "Нижняя неделя, чётная строка и нечётный столбец — переходим в нижнюю ячейку на строку" << targetRow;
+    //                 // shouldMergeHorizontal остаётся false
+    //             }
+    //             else
+    //             {
+    //                 qDebug() << "Ошибка: нет нижней строки для перехода";
+    //                 rsc2->deleteLater();
+    //                 return;
+    //             }
+    //         }
+    //         else
+    //         {
+    //             qDebug() << "Ошибка: не выбрана Верхняя или Нижняя неделя";
+    //             rsc2->deleteLater();
+    //             return;
+    //         }
+    //     }
+    //     else if (!isColOdd)
+    //     {
+    //         // Чётный столбец — ничего не делаем
+    //         qDebug() << "Ошибка: ячейка в чётном столбце, сценарий 2 невозможен";
+    //         rsc2->deleteLater();
+    //         return;
+    //     }
+    //     else
+    //     {
+    //         // Нечётная строка (индекс 1, 3, 5...) — ошибка
+    //         qDebug() << "Ошибка: ячейка должна быть в чётной строке (визуально нечётной)";
+    //         rsc2->deleteLater();
+    //         return;
+    //     }
+    // }
+
+    // // СЦЕНАРИЙ 3: 2-я подгруппа раз в 2 недели + Верхняя/Нижняя неделя
+    // else if (comboChoice2.contains("2-я подгруппа раз в две недели"))  // Условие на выбор
+    // {
+    //     qDebug() << "СЦЕНАРИЙ 3: 2-я подгруппа раз в две недели";
+
+    //     // Объявляем переменные для четности
+    //     bool isRowOdd = (row % 2 != 0);    // НЕЧЕТНАЯ строка
+    //     bool isColOdd = (column % 2 != 0); // НЕЧЕТНЫЙ столбец
+
+    //     // Требуются: четная строка и четный столбец (для 2-й подгруппы)
+    //     // Значит: !isRowOdd && !isColOdd
+    //     if (!isRowOdd && !isColOdd) {
+    //         if (comboChoice3.contains("Верхняя")) {
+    //             targetRow = row;
+    //             qDebug() << "Верхняя неделя, четная строка и четный столбец — остаемся в " << targetRow;
+    //             // Дальнейшее действие, например, оставить текущую ячейку
+    //         }
+    //         else if (comboChoice3.contains("Нижняя")) {
+    //             if (row + 1 < ui->tableWidget->rowCount()) {
+    //                 targetRow = row + 1;
+    //                 qDebug() << "Нижняя неделя, четная строка и четный столбец — переходим в" << targetRow;
+    //                 // Действия перехода
+    //             } else {
+    //                 qDebug() << "Ошибка: нет следующей строки для перехода вниз.";
+    //                 rsc2->deleteLater();
+    //                 return;
+    //             }
+    //         } else {
+    //             qDebug() << "Ошибка: не выбрана Верхняя или Нижняя неделя.";
+    //             rsc2->deleteLater();
+    //             return;
+    //         }
+    //     }
+    //     else if (isColOdd || isRowOdd) {
+    //         // Если столбец или строка не соответствуют нужной
+    //         qDebug() << "Ошибка: ячейка не соответствует условию для 2-й подгруппы.";
+    //         rsc2->deleteLater();
+    //         return;
+    //     }
+    // }
+    // // СЦЕНАРИЙ 4: 1-я подгруппа раз в неделю + none
+    // else if (comboChoice2.contains("1-я подгруппа раз в неделю") && comboChoice3.contains("none")) {
+    //     bool isRowEven = (row % 2 == 0);
+    //     bool isColOdd = (column % 2 != 0);  // нечетный столбец
+    //     bool isRowOdd = (row % 2 != 0);     // нечетная строка
+    //     //bool isColEven = (column % 2 == 0);
+
+    //     qDebug() << "СЦЕНАРИЙ 4: 1-я подгруппа раз в неделю + none";
+
+    //     // Для четной строки + нечетного столбца — объединяем снизу
+    //     if (isRowEven && isColOdd) {
+    //         if (row + 1 < ui->tableWidget->rowCount()) {
+    //             targetRow = row;
+    //             shouldMergeVertical = true; // объединять снизу
+    //             qDebug() << "Ячейка в нечетном столбце и четной строке — объединение снизу.";
+    //         } else {
+    //             qDebug() << "Нет нижней строки для объединения.";
+    //             rsc2->deleteLater();
+    //             return;
+    //         }
+    //     }
+    //     // Для нечетной строки + нечетного столбца — объединяем сверху
+    //     else if (isRowOdd && isColOdd) {
+    //         if (row - 1 >= 0) {
+    //             targetRow = row - 1;
+    //             shouldMergeVertical = true; // объединять сверху
+    //             qDebug() << "Ячейка в нечетном столбце и нечетной строке — объединение сверху.";
+    //         } else {
+    //             qDebug() << "Нет верхней строки для объединения.";
+    //             rsc2->deleteLater();
+    //             return;
+    //         }
+    //     }
+    // }
+    // // СЦЕНАРИЙ 4: 2-я подгруппа раз в неделю + none
+    // else if (comboChoice2.contains("2-я подгруппа раз в неделю") && comboChoice3.contains("none")) {
+    //     bool isRowEven = (row % 2 == 0); // четная строка
+    //     bool isRowOdd = (row % 2 != 0);  // нечетная строка
+    //     bool isColEven = (column % 2 == 0); // четный столбец
+
+    //     qDebug() << "СЦЕНАРИЙ: 2-я подгруппа раз в неделю + none";
+
+    //     // Четный столбец + четная строка — объединение вниз
+    //     if (isColEven && isRowEven) {
+    //         if (row + 1 < ui->tableWidget->rowCount()) {
+    //             targetRow = row;
+    //             shouldMergeVertical = true; // объединить со следующей
+    //             qDebug() << "Четная строка + четный столбец — объединение снизу.";
+    //         } else {
+    //             qDebug() << "Нет нижней строки для объединения.";
+    //             rsc2->deleteLater();
+    //             return;
+    //         }
+    //     }
+    //     // Четный столбец + нечетная строка — объединение сверху
+    //     else if (isColEven && isRowOdd) {
+    //         if (row - 1 >= 0) {
+    //             targetRow = row - 1;
+    //             shouldMergeVertical = true; // объединить сверху
+    //             qDebug() << "Нечетная строка + четный столбец — объединение сверху.";
+    //         } else {
+    //             qDebug() << "Нет верхней строки для объединения.";
+    //             rsc2->deleteLater();
+    //             return;
+    //         }
+    //     }
+    // }
+    // else
+    // {
+    //     qDebug() << "Не совпадает ни с одним сценарием";
+    //     qDebug() << "Записываем текст в текущую ячейку";
+    // }
+
+    // qDebug() << "targetRow=" << targetRow << "shouldMergeHorizontal=" << shouldMergeHorizontal
+    //          << "shouldMergeVertical=" << shouldMergeVertical;
+
+    // // Проверка валидности
+    // if (targetRow < 0 || targetRow >= ui->tableWidget->rowCount())
+    // {
+    //     qDebug() << "ОШИБКА: targetRow вне диапазона";
+    //     rsc2->deleteLater();
+    //     return;
+    // }
+
+    // // Записываем текст
+    // if (!ui->tableWidget->item(targetRow, column))
+    //     ui->tableWidget->setItem(targetRow, column, new QTableWidgetItem());
+
+    // ui->tableWidget->item(targetRow, column)->setText(combinedText);
+    // ui->tableWidget->item(targetRow, column)->setTextAlignment(Qt::AlignHCenter | Qt::AlignVCenter);
+    // qDebug() << "Текст записан в ячейку [" << targetRow << "," << column << "]";
+
+    // // Горизонтальное объединение
+    // if (shouldMergeHorizontal && column + 1 < ui->tableWidget->columnCount())
+    // {
+    //     if (!ui->tableWidget->item(targetRow, column + 1))
+    //         ui->tableWidget->setItem(targetRow, column + 1, new QTableWidgetItem());
+
+    //     ui->tableWidget->setSpan(targetRow, column, 1, 2);
+    //     mergedLefts_.insert(QPair<int,int>(targetRow, column));
+    //     ui->tableWidget->item(targetRow, column + 1)->setText("");
+
+    //     qDebug() << "Горизонтальное объединение выполнено";
+    // }
+
+    // // Вертикальное объединение
+    // if (shouldMergeVertical && row + 1 < ui->tableWidget->rowCount())
+    // {
+    //     if (!ui->tableWidget->item(row + 1, column))
+    //         ui->tableWidget->setItem(row + 1, column, new QTableWidgetItem());
+
+    //     ui->tableWidget->setSpan(targetRow, column, 2, 1);
+    //     mergedLefts_.insert(QPair<int,int>(targetRow, column));
+    //     ui->tableWidget->item(row + 1, column)->setText("");
+
+    //     qDebug() << "Вертикальное объединение выполнено";
+    // }
+
+    // ui->tableWidget->resizeRowsToContents();
+    // rsc2->deleteLater();
+
+    // // 1. Принудительно завершаем редактирование через делегат (публичный способ)
+    // if (ui->tableWidget->isPersistentEditorOpen(ui->tableWidget->currentItem())) {
+    //     ui->tableWidget->closePersistentEditor(ui->tableWidget->currentItem());
+    // }
+
+    // // // 2. Снимаем выделение (синяя заливка)
+    // // ui->tableWidget->clearSelection();
+
+    // // // 3. Убираем пунктирную рамку фокуса с ячейки
+    // // ui->tableWidget->setCurrentItem(nullptr);
+
+    // // // 4. САМОЕ ВАЖНОЕ: Переводим фокус с таблицы на само окно.
+    // // // Это закроет активный текстовый редактор QLineEdit в ячейке.
+    // // this->setFocus();
+
+    // // // 5. На всякий случай сбрасываем состояние фокуса таблицы
+    // // ui->tableWidget->clearFocus();
+
+    // QTimer::singleShot(0, this, [this]()
+    // {
+    //     ui->tableWidget->clearSelection();
+    //     ui->tableWidget->setCurrentItem(nullptr);
+    //     ui->tableWidget->clearFocus();
+    //     this->setFocus();
+    // });
+
     if (editingEnabled)
         return;
+
+    // 1. ОПРЕДЕЛЯЕМ, КАКАЯ ТАБЛИЦА ВЫЗВАЛА ФУНКЦИЮ
+    QTableWidget *table = qobject_cast<QTableWidget*>(sender());
+    if (!table) return;
 
     QScreen *screen = QGuiApplication::primaryScreen();
     rsc2 = new Add_lesson(this);
@@ -1849,12 +2238,13 @@ void MainWindow::ClickedLeftButton(int row, int column)
 
     QPair<int,int> key(row, column);
 
-    // Если уже объединено — разъединяем
+    // 2. ЛОГИКА РАЗЪЕДИНЕНИЯ (используем table вместо ui->tableWidget)
     if (mergedLefts_.contains(key))
     {
-        ui->tableWidget->setSpan(row, column, 1, 1);
-        if (column + 1 < ui->tableWidget->columnCount() && !ui->tableWidget->item(row, column+1))
-            ui->tableWidget->setItem(row, column+1, new QTableWidgetItem(""));
+        table->setSpan(row, column, 1, 1);
+        if (column + 1 < table->columnCount() && !table->item(row, column+1))
+            table->setItem(row, column+1, new QTableWidgetItem(""));
+
         mergedLefts_.remove(key);
         rsc2->deleteLater();
         return;
@@ -1867,307 +2257,77 @@ void MainWindow::ClickedLeftButton(int row, int column)
         return;
     }
 
-    // Читаем данные
+    // Читаем данные из диалогового окна
     QString comboChoice2 = rsc2->ui->comboBox_2->currentText().trimmed();
     QString comboChoice3 = rsc2->ui->comboBox_3->currentText().trimmed();
     QString combinedText = rsc2->text11 + "\n" + rsc2->text22 + "\n" + rsc2->text33 + "\n" + rsc2->text44;
 
-    qDebug() << "\n=== ОТЛАДКА ===";
-    qDebug() << "row=" << row << "column=" << column;
-    qDebug() << "comboBox_2='" << comboChoice2 << "'";
-    qDebug() << "comboBox_3='" << comboChoice3 << "'";
-
-    // ПРАВИЛЬНАЯ логика чётности: нечётные индексы (1, 3, 5...)
-    bool isRowOdd = (row % 2 == 1);    // row 1, 3, 5...
-    bool isColOdd = (column % 2 == 1); // column 1, 3, 5...
-    qDebug() << "isRowOdd=" << isRowOdd << "isColOdd=" << isColOdd;
-
+    // Логика чётности
+    bool isRowOdd = (row % 2 == 1);
+    bool isColOdd = (column % 2 == 1);
     int targetRow = row;
     bool shouldMergeHorizontal = false;
     bool shouldMergeVertical = false;
 
-    // СЦЕНАРИЙ 1: none + (Верхняя или Нижняя неделя)
-    if (comboChoice2 == "none" &&
-        (comboChoice3.contains("Верхняя") || comboChoice3.contains("Нижняя")))
+    // --- СЦЕНАРИИ ОБЪЕДИНЕНИЯ (универсальный код для любой таблицы) ---
+    if (comboChoice2 == "none" && (comboChoice3.contains("Верхняя") || comboChoice3.contains("Нижняя")))
     {
-        qDebug() << "СЦЕНАРИЙ 1: none + неделя";
         shouldMergeHorizontal = true;
-
-        if (comboChoice3.contains("Верхняя"))
-        {
+        if (comboChoice3.contains("Верхняя")) {
             targetRow = row;
-            qDebug() << "Верхняя неделя — остаёмся в строке" << targetRow;
-        }
-        else if (comboChoice3.contains("Нижняя"))
-        {
-            if (isRowOdd)
-            {
-                // Нечётная строка (1, 3, 5...) → переходим в чётную (2, 4, 6...)
-                if (row + 1 < ui->tableWidget->rowCount())
-                {
-                    targetRow = row + 1;
-                    qDebug() << "Нечётная строка, Нижняя неделя — вниз на" << targetRow;
-                }
-                else
-                {
-                    targetRow = row - 1;
-                    qDebug() << "Последняя строка, Нижняя неделя — вверх на" << targetRow;
-                }
-            }
-            else
-            {
-                // Чётная строка (0, 2, 4...) → переходим в нечётную (1, 3, 5...)
-                if (row - 1 >= 0)
-                {
-                    targetRow = row - 1;
-                    qDebug() << "Чётная строка, Нижняя неделя — вверх на" << targetRow;
-                }
-                else
-                {
-                    targetRow = row + 1;
-                    qDebug() << "Первая строка, Нижняя неделя — вниз на" << targetRow;
-                }
-            }
+        } else if (comboChoice3.contains("Нижняя")) {
+            if (isRowOdd) targetRow = (row + 1 < table->rowCount()) ? row + 1 : row - 1;
+            else targetRow = (row - 1 >= 0) ? row - 1 : row + 1;
         }
     }
-    // СЦЕНАРИЙ 2: 1-я подгруппа раз в 2 недели + Верхняя/Нижняя неделя
-    else if (comboChoice2.contains("1-я подгруппа раз в 2 недели"))
-    {
-        qDebug() << "СЦЕНАРИЙ 2: 1-я подгруппа раз в 2 недели";
-
-        // Должна быть чётная строка (индекс 0, 2, 4...) И нечётный столбец (индекс 1, 3, 5...)
-        if (!isRowOdd && isColOdd)
-        {
-            if (comboChoice3.contains("Верхняя"))
-            {
-                targetRow = row;
-                qDebug() << "Верхняя неделя, чётная строка и нечётный столбец — остаёмся в" << targetRow;
-                // shouldMergeHorizontal остаётся false
-            }
-            else if (comboChoice3.contains("Нижняя"))
-            {
-                if (row + 1 < ui->tableWidget->rowCount())
-                {
-                    targetRow = row + 1;
-                    qDebug() << "Нижняя неделя, чётная строка и нечётный столбец — переходим в нижнюю ячейку на строку" << targetRow;
-                    // shouldMergeHorizontal остаётся false
-                }
-                else
-                {
-                    qDebug() << "Ошибка: нет нижней строки для перехода";
-                    rsc2->deleteLater();
-                    return;
-                }
-            }
-            else
-            {
-                qDebug() << "Ошибка: не выбрана Верхняя или Нижняя неделя";
-                rsc2->deleteLater();
-                return;
-            }
-        }
-        else if (!isColOdd)
-        {
-            // Чётный столбец — ничего не делаем
-            qDebug() << "Ошибка: ячейка в чётном столбце, сценарий 2 невозможен";
-            rsc2->deleteLater();
-            return;
-        }
-        else
-        {
-            // Нечётная строка (индекс 1, 3, 5...) — ошибка
-            qDebug() << "Ошибка: ячейка должна быть в чётной строке (визуально нечётной)";
-            rsc2->deleteLater();
-            return;
-        }
-    }
-
-    // СЦЕНАРИЙ 3: 2-я подгруппа раз в 2 недели + Верхняя/Нижняя неделя
-    else if (comboChoice2.contains("2-я подгруппа раз в две недели"))  // Условие на выбор
-    {
-        qDebug() << "СЦЕНАРИЙ 3: 2-я подгруппа раз в две недели";
-
-        // Объявляем переменные для четности
-        bool isRowOdd = (row % 2 != 0);    // НЕЧЕТНАЯ строка
-        bool isColOdd = (column % 2 != 0); // НЕЧЕТНЫЙ столбец
-
-        // Требуются: четная строка и четный столбец (для 2-й подгруппы)
-        // Значит: !isRowOdd && !isColOdd
-        if (!isRowOdd && !isColOdd) {
-            if (comboChoice3.contains("Верхняя")) {
-                targetRow = row;
-                qDebug() << "Верхняя неделя, четная строка и четный столбец — остаемся в " << targetRow;
-                // Дальнейшее действие, например, оставить текущую ячейку
-            }
-            else if (comboChoice3.contains("Нижняя")) {
-                if (row + 1 < ui->tableWidget->rowCount()) {
-                    targetRow = row + 1;
-                    qDebug() << "Нижняя неделя, четная строка и четный столбец — переходим в" << targetRow;
-                    // Действия перехода
-                } else {
-                    qDebug() << "Ошибка: нет следующей строки для перехода вниз.";
-                    rsc2->deleteLater();
-                    return;
-                }
-            } else {
-                qDebug() << "Ошибка: не выбрана Верхняя или Нижняя неделя.";
-                rsc2->deleteLater();
-                return;
-            }
-        }
-        else if (isColOdd || isRowOdd) {
-            // Если столбец или строка не соответствуют нужной
-            qDebug() << "Ошибка: ячейка не соответствует условию для 2-й подгруппы.";
-            rsc2->deleteLater();
-            return;
-        }
-    }
-    // СЦЕНАРИЙ 4: 1-я подгруппа раз в неделю + none
+    // ... здесь остальные сценарии 2, 3, 4 (замените в них ui->tableWidget на table) ...
     else if (comboChoice2.contains("1-я подгруппа раз в неделю") && comboChoice3.contains("none")) {
-        bool isRowEven = (row % 2 == 0);
-        bool isColOdd = (column % 2 != 0);  // нечетный столбец
-        bool isRowOdd = (row % 2 != 0);     // нечетная строка
-        //bool isColEven = (column % 2 == 0);
-
-        qDebug() << "СЦЕНАРИЙ 4: 1-я подгруппа раз в неделю + none";
-
-        // Для четной строки + нечетного столбца — объединяем снизу
-        if (isRowEven && isColOdd) {
-            if (row + 1 < ui->tableWidget->rowCount()) {
-                targetRow = row;
-                shouldMergeVertical = true; // объединять снизу
-                qDebug() << "Ячейка в нечетном столбце и четной строке — объединение снизу.";
-            } else {
-                qDebug() << "Нет нижней строки для объединения.";
-                rsc2->deleteLater();
-                return;
-            }
-        }
-        // Для нечетной строки + нечетного столбца — объединяем сверху
-        else if (isRowOdd && isColOdd) {
-            if (row - 1 >= 0) {
-                targetRow = row - 1;
-                shouldMergeVertical = true; // объединять сверху
-                qDebug() << "Ячейка в нечетном столбце и нечетной строке — объединение сверху.";
-            } else {
-                qDebug() << "Нет верхней строки для объединения.";
-                rsc2->deleteLater();
-                return;
-            }
-        }
-    }
-    // СЦЕНАРИЙ 4: 2-я подгруппа раз в неделю + none
-    else if (comboChoice2.contains("2-я подгруппа раз в неделю") && comboChoice3.contains("none")) {
-        bool isRowEven = (row % 2 == 0); // четная строка
-        bool isRowOdd = (row % 2 != 0);  // нечетная строка
-        bool isColEven = (column % 2 == 0); // четный столбец
-
-        qDebug() << "СЦЕНАРИЙ: 2-я подгруппа раз в неделю + none";
-
-        // Четный столбец + четная строка — объединение вниз
-        if (isColEven && isRowEven) {
-            if (row + 1 < ui->tableWidget->rowCount()) {
-                targetRow = row;
-                shouldMergeVertical = true; // объединить со следующей
-                qDebug() << "Четная строка + четный столбец — объединение снизу.";
-            } else {
-                qDebug() << "Нет нижней строки для объединения.";
-                rsc2->deleteLater();
-                return;
-            }
-        }
-        // Четный столбец + нечетная строка — объединение сверху
-        else if (isColEven && isRowOdd) {
-            if (row - 1 >= 0) {
-                targetRow = row - 1;
-                shouldMergeVertical = true; // объединить сверху
-                qDebug() << "Нечетная строка + четный столбец — объединение сверху.";
-            } else {
-                qDebug() << "Нет верхней строки для объединения.";
-                rsc2->deleteLater();
-                return;
-            }
-        }
-    }
-    else
-    {
-        qDebug() << "Не совпадает ни с одним сценарием";
-        qDebug() << "Записываем текст в текущую ячейку";
+        targetRow = (row % 2 == 0) ? row : row - 1;
+        shouldMergeVertical = true;
     }
 
-    qDebug() << "targetRow=" << targetRow << "shouldMergeHorizontal=" << shouldMergeHorizontal
-             << "shouldMergeVertical=" << shouldMergeVertical;
-
-    // Проверка валидности
-    if (targetRow < 0 || targetRow >= ui->tableWidget->rowCount())
-    {
-        qDebug() << "ОШИБКА: targetRow вне диапазона";
+    // ПРОВЕРКА ВАЛИДНОСТИ И ЗАПИСЬ
+    if (targetRow < 0 || targetRow >= table->rowCount()) {
         rsc2->deleteLater();
         return;
     }
 
-    // Записываем текст
-    if (!ui->tableWidget->item(targetRow, column))
-        ui->tableWidget->setItem(targetRow, column, new QTableWidgetItem());
+    if (!table->item(targetRow, column))
+        table->setItem(targetRow, column, new QTableWidgetItem());
 
-    ui->tableWidget->item(targetRow, column)->setText(combinedText);
-    ui->tableWidget->item(targetRow, column)->setTextAlignment(Qt::AlignHCenter | Qt::AlignVCenter);
-    qDebug() << "Текст записан в ячейку [" << targetRow << "," << column << "]";
+    table->item(targetRow, column)->setText(combinedText);
+    table->item(targetRow, column)->setTextAlignment(Qt::AlignCenter);
 
-    // Горизонтальное объединение
-    if (shouldMergeHorizontal && column + 1 < ui->tableWidget->columnCount())
+    // ВЫПОЛНЕНИЕ ОБЪЕДИНЕНИЙ В ТЕКУЩЕЙ ТАБЛИЦЕ
+    if (shouldMergeHorizontal && column + 1 < table->columnCount())
     {
-        if (!ui->tableWidget->item(targetRow, column + 1))
-            ui->tableWidget->setItem(targetRow, column + 1, new QTableWidgetItem());
-
-        ui->tableWidget->setSpan(targetRow, column, 1, 2);
+        if (!table->item(targetRow, column + 1))
+            table->setItem(targetRow, column + 1, new QTableWidgetItem());
+        table->setSpan(targetRow, column, 1, 2);
         mergedLefts_.insert(QPair<int,int>(targetRow, column));
-        ui->tableWidget->item(targetRow, column + 1)->setText("");
-
-        qDebug() << "Горизонтальное объединение выполнено";
+        table->item(targetRow, column + 1)->setText("");
     }
 
-    // Вертикальное объединение
-    if (shouldMergeVertical && row + 1 < ui->tableWidget->rowCount())
+    if (shouldMergeVertical && row + 1 < table->rowCount())
     {
-        if (!ui->tableWidget->item(row + 1, column))
-            ui->tableWidget->setItem(row + 1, column, new QTableWidgetItem());
-
-        ui->tableWidget->setSpan(targetRow, column, 2, 1);
+        if (!table->item(row + 1, column))
+            table->setItem(row + 1, column, new QTableWidgetItem());
+        table->setSpan(targetRow, column, 2, 1);
         mergedLefts_.insert(QPair<int,int>(targetRow, column));
-        ui->tableWidget->item(row + 1, column)->setText("");
-
-        qDebug() << "Вертикальное объединение выполнено";
+        table->item(row + 1, column)->setText("");
     }
 
-    ui->tableWidget->resizeRowsToContents();
+    table->resizeRowsToContents();
     rsc2->deleteLater();
 
-    // 1. Принудительно завершаем редактирование через делегат (публичный способ)
-    if (ui->tableWidget->isPersistentEditorOpen(ui->tableWidget->currentItem())) {
-        ui->tableWidget->closePersistentEditor(ui->tableWidget->currentItem());
-    }
-
-    // // 2. Снимаем выделение (синяя заливка)
-    // ui->tableWidget->clearSelection();
-
-    // // 3. Убираем пунктирную рамку фокуса с ячейки
-    // ui->tableWidget->setCurrentItem(nullptr);
-
-    // // 4. САМОЕ ВАЖНОЕ: Переводим фокус с таблицы на само окно.
-    // // Это закроет активный текстовый редактор QLineEdit в ячейке.
-    // this->setFocus();
-
-    // // 5. На всякий случай сбрасываем состояние фокуса таблицы
-    // ui->tableWidget->clearFocus();
-
-    QTimer::singleShot(0, this, [this]()
-    {
-        ui->tableWidget->clearSelection();
-        ui->tableWidget->setCurrentItem(nullptr);
-        ui->tableWidget->clearFocus();
+    // Сброс фокуса и выделения
+    QTimer::singleShot(0, this, [table, this]() {
+        table->clearSelection();
+        table->setCurrentItem(nullptr);
+        table->clearFocus();
         this->setFocus();
     });
+
 }
 
 // Реализация функции определения целевой ячейки
@@ -2582,12 +2742,20 @@ void MainWindow::closeEvent (QCloseEvent *event)
 
     if (ret == QMessageBox::Save)
     {
-        if (saveBase())
+        // Сохраняем первый семестр
+        bool springOk = saveBase(ui->tableWidget, "lessons_spring_semester");
+
+        // Сохраняем второй семестр
+        bool autumnOk = saveBase(ui->tableWidget_2, "lessons_autumn_semester");
+
+        if (springOk && autumnOk)
         {
             event->accept();
         }
         else
         {
+            // Если что-то не сохранилось, можно прервать выход
+            QMessageBox::critical(this, "Ошибка", "Не удалось сохранить данные одного из семестров.");
             event->ignore();
         }
     }
@@ -2635,24 +2803,30 @@ void MainWindow::newUser()
     label->setText(fullText); // Assuming you have a QLabel named label in the UI
 }
 
-bool MainWindow::saveBase()
+bool MainWindow::saveBase(QTableWidget *table, const QString &dbTable)
 {
+    if (!table) return false;
+
     QSqlQuery query;
     bool success = true;
-    if (!query.exec("DELETE FROM lessons_spring_semester")) return false;
 
-    for (int row = 0; row < ui->tableWidget->rowCount(); ++row)
+    // Очищаем именно ту таблицу в БД, имя которой передано в dbTable
+    if (!query.exec(QString("DELETE FROM %1").arg(dbTable))) {
+        qDebug() << "Ошибка очистки БД:" << query.lastError().text();
+        return false;
+    }
+
+    for (int row = 0; row < table->rowCount(); ++row)
     {
-        for (int col = 1; col < ui->tableWidget->columnCount(); ++col)
+        for (int col = 1; col < table->columnCount(); ++col)
         {
-            // Пропускаем ячейки, которые поглощены объединением (не главные в Span)
-            if (ui->tableWidget->item(row, col) == nullptr ||
-                ui->tableWidget->isPersistentEditorOpen(ui->tableWidget->model()->index(row, col)))
-                // В QTableWidget лучше проверять визуально через Span:
-                if (row > 0 && ui->tableWidget->rowSpan(row-1, col) > 1) continue;
-            if (col > 0 && ui->tableWidget->columnSpan(row, col-1) > 1) continue;
+            // Используем аргумент 'table' вместо ui->tableWidget
+            if (row > 0 && table->rowSpan(row - 1, col) > 1) continue;
+            if (col > 0 && table->columnSpan(row, col - 1) > 1) continue;
 
-            QTableWidgetItem* item = ui->tableWidget->item(row, col);
+            QTableWidgetItem* item = table->item(row, col);
+            if (!item) continue;
+
             QString cellText = item->text().trimmed();
             QString finalContent;
 
@@ -2666,18 +2840,18 @@ bool MainWindow::saveBase()
                 for (int i = 0; i < qMin(4, lines.count()); ++i) firstFour << lines[i].trimmed();
                 QString parts = firstFour.join("\n");
 
-                // Определение positionKey (5-я строка)
-                int rSpan = ui->tableWidget->rowSpan(row, col);
-                int cSpan = ui->tableWidget->columnSpan(row, col);
-                bool isRowOdd = (row % 2 != 0); // 1, 3, 5... (нижняя неделя)
-                bool isColOdd = (col % 2 != 0); // 1, 3, 5... (левая подгруппа)
+                // Определение positionKey (5-я строка) через переданную таблицу
+                int rSpan = table->rowSpan(row, col);
+                int cSpan = table->columnSpan(row, col);
+                bool isRowOdd = (row % 2 != 0);
+                bool isColOdd = (col % 2 != 0);
 
                 QString posKey = "none";
                 if (rSpan == 1 && cSpan == 1) {
                     if (!isRowOdd && isColOdd)  posKey = "up_left";
-                    if (!isRowOdd && !isColOdd) posKey = "up_right";
-                    if (isRowOdd && isColOdd)   posKey = "down_left";
-                    if (isRowOdd && !isColOdd)  posKey = "down_right";
+                    else if (!isRowOdd && !isColOdd) posKey = "up_right";
+                    else if (isRowOdd && isColOdd)   posKey = "down_left";
+                    else if (isRowOdd && !isColOdd)  posKey = "down_right";
                 }
                 else if (rSpan == 1 && cSpan > 1) {
                     posKey = isRowOdd ? "left_right_down" : "left_right_up";
@@ -2698,14 +2872,16 @@ bool MainWindow::saveBase()
                 finalContent = parts + "\n" + posKey + "\n" + lessonType;
             }
 
-            query.prepare("INSERT INTO lessons_spring_semester (row_num, col_num, content) VALUES (?, ?, ?)");
+            // INSERT в нужную таблицу БД
+            query.prepare(QString("INSERT INTO %1 (row_num, col_num, content) VALUES (?, ?, ?)").arg(dbTable));
             query.addBindValue(row);
             query.addBindValue(col);
             query.addBindValue(finalContent);
             if (!query.exec()) success = false;
         }
     }
-    if (success) message_action("Success", "Данные сохранены с ключами позиций");
+
+    if (success) message_action("Success", QString("Данные таблицы %1 сохранены").arg(dbTable));
     return success;
 }
 
@@ -2725,61 +2901,61 @@ QString MainWindow::getPositionKey(int row, int col)
         return "down_right";
 }
 
-void MainWindow::loadBase()
+void MainWindow::loadBase(QTableWidget *table, const QString &dbTable)
 {
-    ui->tableWidget->blockSignals(true);
-    ui->tableWidget->clearSpans();
+    // ui->tableWidget->blockSignals(true);
+    // ui->tableWidget->clearSpans();
 
-    // Чистим текст и ставим центрирование (высота строк НЕ меняется)
-    for (int r = 0; r < ui->tableWidget->rowCount(); ++r) {
-        for (int c = 1; c < ui->tableWidget->columnCount(); ++c) {
-            if (auto item = ui->tableWidget->item(r, c)) {
-                item->setText("");
-                item->setTextAlignment(Qt::AlignCenter);
-            }
-        }
-    }
+    // // Чистим текст и ставим центрирование (высота строк НЕ меняется)
+    // for (int r = 0; r < ui->tableWidget->rowCount(); ++r) {
+    //     for (int c = 1; c < ui->tableWidget->columnCount(); ++c) {
+    //         if (auto item = ui->tableWidget->item(r, c)) {
+    //             item->setText("");
+    //             item->setTextAlignment(Qt::AlignCenter);
+    //         }
+    //     }
+    // }
 
-    QSqlQuery query("SELECT row_num, col_num, content FROM lessons_spring_semester", db);
-    while (query.next())
-    {
-        int r = query.value(0).toInt();
-        int c = query.value(1).toInt();
-        QString fullContent = query.value(2).toString();
+    // QSqlQuery query("SELECT row_num, col_num, content FROM lessons_spring_semester", db);
+    // while (query.next())
+    // {
+    //     int r = query.value(0).toInt();
+    //     int c = query.value(1).toInt();
+    //     QString fullContent = query.value(2).toString();
 
-        if (r < ui->tableWidget->rowCount() && c < ui->tableWidget->columnCount())
-        {
-            QTableWidgetItem *item = ui->tableWidget->item(r, c);
-            if (!item) continue;
-            item->setTextAlignment(Qt::AlignCenter);
+    //     if (r < ui->tableWidget->rowCount() && c < ui->tableWidget->columnCount())
+    //     {
+    //         QTableWidgetItem *item = ui->tableWidget->item(r, c);
+    //         if (!item) continue;
+    //         item->setTextAlignment(Qt::AlignCenter);
 
-            if (fullContent == "[EMPTY]") {
-                item->setText("");
-            }
-            else {
-                QStringList parts = fullContent.split('\n');
-                // Отображаем первые 4 строки
-                QStringList displayLines;
-                for (int i = 0; i < qMin(4, parts.size()); ++i) displayLines << parts.at(i);
-                item->setText(displayLines.join("\n"));
+    //         if (fullContent == "[EMPTY]") {
+    //             item->setText("");
+    //         }
+    //         else {
+    //             QStringList parts = fullContent.split('\n');
+    //             // Отображаем первые 4 строки
+    //             QStringList displayLines;
+    //             for (int i = 0; i < qMin(4, parts.size()); ++i) displayLines << parts.at(i);
+    //             item->setText(displayLines.join("\n"));
 
-                // Восстановление объединений по ключам
-                if (fullContent.contains("left_right_up") || fullContent.contains("left_right_down")) {
-                    ui->tableWidget->setSpan(r, c, 1, 2);
-                }
-                else if (fullContent.contains("up_down_left") || fullContent.contains("up_down_right")) {
-                    ui->tableWidget->setSpan(r, c, 2, 1);
-                }
-                else if (fullContent.contains("full_cell")) {
-                    ui->tableWidget->setSpan(r, c, 2, 2);
-                }
-            }
-        }
-    }
+    //             // Восстановление объединений по ключам
+    //             if (fullContent.contains("left_right_up") || fullContent.contains("left_right_down")) {
+    //                 ui->tableWidget->setSpan(r, c, 1, 2);
+    //             }
+    //             else if (fullContent.contains("up_down_left") || fullContent.contains("up_down_right")) {
+    //                 ui->tableWidget->setSpan(r, c, 2, 1);
+    //             }
+    //             else if (fullContent.contains("full_cell")) {
+    //                 ui->tableWidget->setSpan(r, c, 2, 2);
+    //             }
+    //         }
+    //     }
+    // }
 
-    ui->tableWidget->blockSignals(false);
-    ui->tableWidget->viewport()->update();
-    message_action("Success", "Загрузка завершена: позиции восстановлены");
+    // ui->tableWidget->blockSignals(false);
+    // ui->tableWidget->viewport()->update();
+    // message_action("Success", "Загрузка завершена: позиции восстановлены");
 }
 
 // void MainWindow::reloadAllTables()

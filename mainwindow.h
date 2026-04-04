@@ -76,7 +76,7 @@ protected:
 
 protected slots:
     //void onPageChanged(int index);
-    bool saveBase();
+    bool saveBase(QTableWidget *table, const QString &dbTable);
     void onItemChanged();
     void NewTable();
     void closeEvent(QCloseEvent *event) override;
@@ -106,7 +106,7 @@ protected slots:
     void ClickedLeftButton2(int row, int column);
     // void on_monthCombo_currentIndexChanged(int index);
     // void on_dateChanged();
-    void loadBase();
+    void loadBase(QTableWidget *table, const QString &dbTable);
 private:
     newLesson *rsc;
     Add_lesson *rsc2;
