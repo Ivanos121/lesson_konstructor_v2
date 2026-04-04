@@ -25,6 +25,7 @@
 #include <QDBusReply>
 #include <QTimer>
 #include <utility>
+#include <QShortcut>
 
 //=======ИНИЦИАЛИЗАЦИЯ ГЛОБАЛЬНЫХ ПЕРЕМЕННЫХ========
 
@@ -144,10 +145,6 @@ MainWindow::MainWindow(QWidget *parent)
     spacerAfter2->setFixedWidth(15);
     pToolbar->addWidget(spacerAfter2);
 
-    addLinesComboBox();
-    addLineslessonList();
-
-    onPageChanged2(lessonList->currentIndex());
     setWindowTitle("Программатор нагрузки");
 
     //=====НАСТРОЙКА TABLEWIDGET=====
@@ -242,14 +239,14 @@ MainWindow::MainWindow(QWidget *parent)
 
     QScroller::grabGesture(ui->tableWidget, QScroller::LeftMouseButtonGesture);
 
-    connect(lessonList, QOverload<int>::of(&QComboBox::currentIndexChanged), this, &MainWindow::onPageChanged2);
+    //connect(lessonList, QOverload<int>::of(&QComboBox::currentIndexChanged), this, &MainWindow::onPageChanged2);
     connect(ui->newTable, &QAction::triggered, this, &MainWindow::NewTable);
     //connect(ui->saveDoc, &QAction::triggered, this, &MainWindow::saveBase);
     //connect(ui->loadDoc, &QAction::triggered, this, &MainWindow::loadBase);
     connect(ui->closeApp, &QAction::triggered, this, &MainWindow::close);
     connect(ui->tableWidget, &QTableWidget::itemChanged, this, &MainWindow::onItemChanged);
-    connect(ui->openLesson, &QAction::triggered, this, &MainWindow::openLesson);
-    connect(ui->medgeHorizontalCells, &QAction::triggered, this, &MainWindow::medgehorizontalcells);
+    //connect(ui->openLesson, &QAction::triggered, this, &MainWindow::openLesson);
+    //connect(ui->medgeHorizontalCells, &QAction::triggered, this, &MainWindow::medgehorizontalcells);
     connect(ui->tableWidget, &QTableWidget::cellDoubleClicked, this, &MainWindow::ClickedLeftButton);
     connect(ui->tableWidget_2, &QTableWidget::cellDoubleClicked, this, &MainWindow::ClickedLeftButton);
     connect(ui->tableWidget_4, &QTableWidget::cellDoubleClicked, this, &MainWindow::ClickedLeftButton2);
@@ -782,8 +779,6 @@ MainWindow::MainWindow(QWidget *parent)
 
     ui->tableWidget_9->setHorizontalHeaderLabels(horizontalTexts9);
 
-
-
     QStringList vertikalTexts9 = {
         "Февраль",
         "Март",
@@ -978,28 +973,69 @@ MainWindow::MainWindow(QWidget *parent)
     ui->tableWidget_2->verticalHeader()->setSectionResizeMode(QHeaderView::Stretch);
     ui->tableWidget_2->hideColumn(0);
 
-    // int totalRows = ui->tableWidget_2->rowCount();
+    ui->tableWidget->setContextMenuPolicy(Qt::CustomContextMenu);
+    ui->tableWidget_2->setContextMenuPolicy(Qt::CustomContextMenu);
 
-    // for (int i = totalRows - 4; i < totalRows; ++i)
-    // {
-    //     ui->tableWidget_2->setRowHidden(i, true);
-    // }
+    connect(ui->tableWidget, &QTableWidget::customContextMenuRequested, this, &MainWindow::showContextMenu);
+    connect(ui->tableWidget_2, &QTableWidget::customContextMenuRequested, this, &MainWindow::showContextMenu);
 
-    //QTimer::singleShot(100, this, &MainWindow::loadBase);
+    // Создаем горячую клавишу Ctrl+S
+    QShortcut *saveShortcut = new QShortcut(QKeySequence("Ctrl+S"), this);
 
-    // ТОЛЬКО ТЕПЕРЬ разрешаем работу логики
-    //isLoaded = true;
+    // При нажатии определяем активную таблицу и вызываем сохранение
+    connect(saveShortcut, &QShortcut::activated, this, [this]() {
+        // Находим активную таблицу на текущей вкладке
+        QWidget* currentTab = ui->tabWidget->currentWidget();
+        QTableWidget* activeTable = (currentTab) ? currentTab->findChild<QTableWidget*>() : nullptr;
 
-    // Вызываем построение сетки вручную ОДИН раз при старте
-    //rebuildCalendarGrid(current.year(), current.month());
+        if (activeTable) {
+            QString dbName = (activeTable == ui->tableWidget)
+            ? "lessons_spring_semester"
+            : "lessons_autumn_semester";
+
+            if (saveBase(activeTable, dbName)) {
+                ui->statusbar->showMessage("Сохранено (Ctrl+S): " + dbName, 3000);
+            }
+        }
+    });
+
+    QShortcut *deleteShortcut = new QShortcut(QKeySequence::Delete, this);
+    connect(deleteShortcut, &QShortcut::activated, this, &MainWindow::deleteLesson);
+
     loadBase(ui->tableWidget, "lessons_spring_semester");
-    //loadBase(ui->tableWidget_2, "lessons_autumn_semester");
+    loadBase(ui->tableWidget_2, "lessons_autumn_semester");
 }
 
 MainWindow::~MainWindow()
 {
     tables.clear();
     delete ui;
+}
+
+void MainWindow::showContextMenu(const QPoint &pos)
+{
+    // Определяем, какая таблица вызвала меню
+    QTableWidget *table = qobject_cast<QTableWidget*>(sender());
+    if (!table) return;
+
+    // Создаем объект меню
+    QMenu menu(this);
+    menu.setStyleSheet("QMenu { border: 1px solid black; padding: 5px; }"); // Опциональный стиль
+
+    // Добавляем действия и привязываем их к вашим существующим функциям
+    QAction *actMerge = menu.addAction("Объединить выделенное");
+    connect(actMerge, &QAction::triggered, this, &MainWindow::mergeCells);
+
+    QAction *actSplit = menu.addAction("Разъединить ячейки");
+    connect(actSplit, &QAction::triggered, this, &MainWindow::splitCells);
+
+    menu.addSeparator(); // Разделительная линия
+
+    QAction *actDelete = menu.addAction("Очистить содержимое");
+    connect(actDelete, &QAction::triggered, this, &MainWindow::deleteLesson);
+
+    // Показываем меню в глобальных координатах экрана
+    menu.exec(table->viewport()->mapToGlobal(pos));
 }
 
 void MainWindow::showEvent(QShowEvent *event)
@@ -1599,111 +1635,24 @@ void MainWindow::setColumnAndRowSizes(QTableWidget *tv)
     qDebug() << "Table layout updated to Stretch mode.";
 }
 
-void MainWindow::formatTableItems(QTableWidget *tableWidget)
-{
-    // Учитываем высоту заголовка и внутренние отступы
-    int availableHeight = tableWidget->height() - tableWidget->horizontalHeader()->height() - tableWidget->frameWidth();
-    int availableWidth = tableWidget->width() - tableWidget->verticalHeader()->width() - tableWidget->frameWidth();
-
-    // Проверяем, что доступное пространство не отрицательное
-    if (availableHeight > 0 && availableWidth > 0)
-    {
-        // Устанавливаем пропорциональную ширину столбцов
-        int columnWidth = availableWidth / tableWidget->columnCount();
-        for (int col = 0; col < tableWidget->columnCount(); ++col)
-        {
-            tableWidget->setColumnWidth(col, columnWidth);
-        }
-
-        // Устанавливаем пропорциональную высоту строк
-        int rowHeight = availableHeight / tableWidget->rowCount();
-        for (int row = 0; row < tableWidget->rowCount(); ++row)
-        {
-            tableWidget->setRowHeight(row, rowHeight);
-        }
-    }
-}
-
-void MainWindow::refreshTableDisplay()
-{
-    // Отключаем обновление UI для производительности
-    ui->tableWidget->setUpdatesEnabled(false);
-
-    // Перезагружаем данные
-    //loadTableData(currentTableName);
-
-    // Включаем обновление UI
-    ui->tableWidget->setUpdatesEnabled(true);
-    ui->tableWidget->viewport()->update();
-}
-
 void MainWindow::splitCells()
 {
-    // QTableWidget *table = ui->tableWidget;
-    // QList<QTableWidgetSelectionRange> ranges = table->selectedRanges();
+    // 1. Динамически находим таблицу на активной вкладке
+    QTableWidget *table = qobject_cast<QTableWidget*>(sender());
 
-    // if (ranges.isEmpty()) {
-    //     //QMessageBox::warning(this, "Ошибка", "Выделите смежные ячейки");
-    //     message_action("Ошибка", "Выделите смежные ячейки");
-    //     return;
-    // }
+    if (!table) {
+        QWidget* currentTab = ui->tabWidget->currentWidget();
+        if (currentTab) {
+            table = currentTab->findChild<QTableWidget*>();
+        }
+    }
 
-    // QTableWidgetSelectionRange range = ranges.first();
-    // int rCount = range.rowCount();
-    // int cCount = range.columnCount();
-    // int top = range.topRow();
-    // int left = range.leftColumn();
+    if (!table) {
+        QMessageBox::warning(this, "Ошибка", "Не удалось найти активную таблицу");
+        return;
+    }
 
-    // // 1. Проверка допустимых размеров (1x2, 2x1 или 2x2)
-    // bool isHorizontal = (rCount == 1 && cCount == 2);
-    // bool isVertical = (rCount == 2 && cCount == 1);
-    // bool isSquare = (rCount == 2 && cCount == 2);
-
-    // if (!isHorizontal && !isVertical && !isSquare) {
-    //     //QMessageBox::warning(this, "Ошибка", "Выделите ровно 2 смежные ячейки или блок 2x2");
-    //     message_action("Ошибка", "Выделите ровно 2 смежные ячейки или блок 2x2");
-    //     return;
-    // }
-
-    // // 2. Проверка, не поглощены ли уже ячейки другими объединениями
-    // for (int r = top; r < top + rCount; ++r) {
-    //     for (int c = left; c < left + cCount; ++c) {
-    //         if (table->rowSpan(r, c) > 1 || table->columnSpan(r, c) > 1) {
-    //             //QMessageBox::warning(this, "Ошибка", "В области есть уже объединенные ячейки");
-    //             message_action("Ошибка", "В области есть уже объединенные ячейки");
-    //             return;
-    //         }
-    //     }
-    // }
-
-    // // 3. Сбор текста изо всех ячеек выделения
-    // QStringList texts;
-    // for (int r = top; r < top + rCount; ++r) {
-    //     for (int c = left; c < left + cCount; ++c) {
-    //         if (QTableWidgetItem *it = table->item(r, c)) {
-    //             if (!it->text().trimmed().isEmpty()) {
-    //                 texts << it->text().trimmed();
-    //             }
-    //         }
-    //     }
-    // }
-
-    // // 4. Выполнение объединения
-    // table->setSpan(top, left, rCount, cCount);
-
-    // // 5. Установка объединенного текста в главную ячейку
-    // if (QTableWidgetItem *mainItem = table->item(top, left)) {
-    //     // Используем \n для вертикальных/квадратных и пробел для горизонтальных
-    //     QString separator = (isHorizontal) ? " " : "\n";
-    //     mainItem->setText(texts.join(separator));
-    //     mainItem->setTextAlignment(Qt::AlignCenter);
-    // }
-
-    // // Уведомление
-    // QString desc = isSquare ? "блок 2x2" : (isHorizontal ? "горизонтально" : "вертикально");
-    // message_action("Успех", QString("Ячейки объединены (%1)").arg(desc));
-
-    QTableWidget *table = ui->tableWidget;
+    // 2. Получаем выделенные диапазоны в найденной таблице
     QList<QTableWidgetSelectionRange> ranges = table->selectedRanges();
 
     if (ranges.isEmpty()) {
@@ -1712,18 +1661,19 @@ void MainWindow::splitCells()
     }
 
     int splitCount = 0;
-    table->blockSignals(true); // Блокируем сигналы для скорости
+    table->blockSignals(true); // Блокируем сигналы для скорости и предотвращения спама в БД
 
+    // Используем std::as_const для предотвращения detach (как обсуждали ранее)
     for (const QTableWidgetSelectionRange &range : std::as_const(ranges))
     {
         for (int r = range.topRow(); r <= range.bottomRow(); ++r) {
             for (int c = range.leftColumn(); c <= range.rightColumn(); ++c)
             {
-
+                // Проверяем Span в текущей таблице
                 int rSpan = table->rowSpan(r, c);
                 int cSpan = table->columnSpan(r, c);
 
-                // Если ячейка является началом объединения (Span > 1)
+                // Если ячейка является началом объединения
                 if (rSpan > 1 || cSpan > 1) {
                     table->setSpan(r, c, 1, 1);
                     splitCount++;
@@ -1744,82 +1694,23 @@ void MainWindow::splitCells()
 
 void MainWindow::mergeCells()
 {
-    // QTableWidget *table = ui->tableWidget;
-    // QList<QTableWidgetSelectionRange> ranges = table->selectedRanges();
+    // 1. ОПРЕДЕЛЯЕМ АКТИВНУЮ ТАБЛИЦУ
+    QTableWidget *table = qobject_cast<QTableWidget*>(sender());
 
-    // if (ranges.isEmpty()) {
-    //     //QMessageBox::warning(this, "Ошибка", "Выделите две смежные ячейки");
-    //     message_action("Ошибка", "Выделите две смежные ячейки");
+    if (!table) {
+        // Берем текущий виджет вкладки
+        QWidget* currentTab = ui->tabWidget->currentWidget();
+        if (currentTab) {
+            // Ищем QTableWidget внутри этого виджета
+            table = currentTab->findChild<QTableWidget*>();
+        }
+    }
 
-    //     return;
-    // }
+    if (!table) {
+        QMessageBox::warning(this, "Ошибка", "Не удалось найти таблицу на активной вкладке");
+        return;
+    }
 
-    // QTableWidgetSelectionRange range = ranges.first();
-    // int topRow = range.topRow();
-    // int bottomRow = range.bottomRow();
-    // int leftCol = range.leftColumn();
-    // int rightCol = range.rightColumn();
-
-    // // Определяем направление объединения
-    // bool isHorizontal = (topRow == bottomRow) && (rightCol - leftCol + 1 == 2);
-    // bool isVertical = (leftCol == rightCol) && (bottomRow - topRow + 1 == 2);
-
-    // if (!isHorizontal && !isVertical) {
-    //     // QMessageBox::warning(this, "Ошибка",
-    //     //                      "Выделите ровно две смежные ячейки (горизонтально или вертикально)");
-    //     message_action("Ошибка", "Выделите ровно две смежные ячейки (горизонтально или вертикально)");
-    //     return;
-    // }
-
-    // // Проверяем, что ячейки не уже объединены
-    // if (isHorizontal) {
-    //     if (table->columnSpan(topRow, leftCol) > 1 ||
-    //         table->columnSpan(topRow, rightCol) > 1) {
-    //         QMessageBox::warning(this, "Ошибка", "Одна из ячеек уже объединена");
-    //         message_action("Ошибка", "Одна из ячеек уже объединена");
-    //         return;
-    //     }
-    // } else {
-    //     if (table->rowSpan(topRow, leftCol) > 1 ||
-    //         table->rowSpan(bottomRow, leftCol) > 1) {
-    //         //QMessageBox::warning(this, "Ошибка", "Одна из ячеек уже объединена");
-    //         message_action("Ошибка", "Одна из ячеек уже объединена");
-
-    //         return;
-    //     }
-    // }
-
-    // // Получаем содержимое ячеек
-    // QTableWidgetItem *item1, *item2;
-    // QString separator;
-
-    // if (isHorizontal) {
-    //     item1 = table->item(topRow, leftCol);
-    //     item2 = table->item(topRow, rightCol);
-    //     separator = " ";
-    //     table->setSpan(topRow, leftCol, 1, 2);
-    // } else {
-    //     item1 = table->item(topRow, leftCol);
-    //     item2 = table->item(bottomRow, leftCol);
-    //     separator = "\n";
-    //     table->setSpan(topRow, leftCol, 2, 1);
-    // }
-
-    // // Объединяем текст
-    // if (item1 && item2) {
-    //     QString combinedText = item1->text() + separator + item2->text();
-    //     item1->setText(combinedText);
-    // }
-
-    // // Логирование и уведомление
-    // QString direction = isHorizontal ? "горизонтально" : "вертикально";
-    // qDebug() << "Ячейки объединены" << direction;
-
-    // // QMessageBox::information(this, "Успех",
-    // //                          QString("Ячейки успешно объединены %1").arg(direction));
-    // message_action("Успех", QString("Ячейки объединены (%1)").arg(direction));
-
-    QTableWidget *table = ui->tableWidget;
     QList<QTableWidgetSelectionRange> ranges = table->selectedRanges();
 
     if (ranges.isEmpty()) {
@@ -1833,7 +1724,7 @@ void MainWindow::mergeCells()
     int top = range.topRow();
     int left = range.leftColumn();
 
-    // 1. Проверка допустимых размеров (1x2, 2x1 или 2x2)
+    // Проверка допустимых размеров (1x2, 2x1 или 2x2)
     bool isHorizontal = (rCount == 1 && cCount == 2);
     bool isVertical = (rCount == 2 && cCount == 1);
     bool isSquare = (rCount == 2 && cCount == 2);
@@ -1844,11 +1735,15 @@ void MainWindow::mergeCells()
         return;
     }
 
+    // Блокируем сигналы, чтобы не спамить в базу/логи при изменении текста
+    table->blockSignals(true);
+
     // 2. Проверка, не поглощены ли уже ячейки другими объединениями
     for (int r = top; r < top + rCount; ++r) {
         for (int c = left; c < left + cCount; ++c) {
             if (table->rowSpan(r, c) > 1 || table->columnSpan(r, c) > 1) {
                 QMessageBox::warning(this, "Ошибка", "В области есть уже объединенные ячейки");
+                table->blockSignals(false);
                 return;
             }
         }
@@ -1866,16 +1761,18 @@ void MainWindow::mergeCells()
         }
     }
 
-    // 4. Выполнение объединения
+    // 4. Выполнение объединения в целевой таблице
     table->setSpan(top, left, rCount, cCount);
 
     // 5. Установка объединенного текста в главную ячейку
     if (QTableWidgetItem *mainItem = table->item(top, left)) {
-        // Используем \n для вертикальных/квадратных и пробел для горизонтальных
         QString separator = (isHorizontal) ? " " : "\n";
         mainItem->setText(texts.join(separator));
         mainItem->setTextAlignment(Qt::AlignCenter);
     }
+
+    table->blockSignals(false);
+    table->viewport()->update();
 
     // Уведомление
     QString desc = isSquare ? "блок 2x2" : (isHorizontal ? "горизонтально" : "вертикально");
@@ -1884,345 +1781,10 @@ void MainWindow::mergeCells()
 
 void MainWindow::ClickedLeftButton(int row, int column)
 {
-    // if (editingEnabled)
-    //     return;
-
-    // QScreen *screen = QGuiApplication::primaryScreen();
-    // rsc2 = new Add_lesson(this);
-    // rsc2->setWindowTitle("Введите данные для ячейки");
-    // rsc2->setGeometry(
-    //     QStyle::alignedRect(
-    //         Qt::LeftToRight,
-    //         Qt::AlignCenter,
-    //         rsc2->size(),
-    //         screen->geometry()));
-
-    // QPair<int,int> key(row, column);
-
-    // // Если уже объединено — разъединяем
-    // if (mergedLefts_.contains(key))
-    // {
-    //     ui->tableWidget->setSpan(row, column, 1, 1);
-    //     if (column + 1 < ui->tableWidget->columnCount() && !ui->tableWidget->item(row, column+1))
-    //         ui->tableWidget->setItem(row, column+1, new QTableWidgetItem(""));
-    //     mergedLefts_.remove(key);
-    //     rsc2->deleteLater();
-    //     return;
-    // }
-
-    // // Выполняем диалог
-    // if (rsc2->exec() != QDialog::Accepted)
-    // {
-    //     rsc2->deleteLater();
-    //     return;
-    // }
-
-    // // Читаем данные
-    // QString comboChoice2 = rsc2->ui->comboBox_2->currentText().trimmed();
-    // QString comboChoice3 = rsc2->ui->comboBox_3->currentText().trimmed();
-    // QString combinedText = rsc2->text11 + "\n" + rsc2->text22 + "\n" + rsc2->text33 + "\n" + rsc2->text44;
-
-    // qDebug() << "\n=== ОТЛАДКА ===";
-    // qDebug() << "row=" << row << "column=" << column;
-    // qDebug() << "comboBox_2='" << comboChoice2 << "'";
-    // qDebug() << "comboBox_3='" << comboChoice3 << "'";
-
-    // // ПРАВИЛЬНАЯ логика чётности: нечётные индексы (1, 3, 5...)
-    // bool isRowOdd = (row % 2 == 1);    // row 1, 3, 5...
-    // bool isColOdd = (column % 2 == 1); // column 1, 3, 5...
-    // qDebug() << "isRowOdd=" << isRowOdd << "isColOdd=" << isColOdd;
-
-    // int targetRow = row;
-    // bool shouldMergeHorizontal = false;
-    // bool shouldMergeVertical = false;
-
-    // // СЦЕНАРИЙ 1: none + (Верхняя или Нижняя неделя)
-    // if (comboChoice2 == "none" &&
-    //     (comboChoice3.contains("Верхняя") || comboChoice3.contains("Нижняя")))
-    // {
-    //     qDebug() << "СЦЕНАРИЙ 1: none + неделя";
-    //     shouldMergeHorizontal = true;
-
-    //     if (comboChoice3.contains("Верхняя"))
-    //     {
-    //         targetRow = row;
-    //         qDebug() << "Верхняя неделя — остаёмся в строке" << targetRow;
-    //     }
-    //     else if (comboChoice3.contains("Нижняя"))
-    //     {
-    //         if (isRowOdd)
-    //         {
-    //             // Нечётная строка (1, 3, 5...) → переходим в чётную (2, 4, 6...)
-    //             if (row + 1 < ui->tableWidget->rowCount())
-    //             {
-    //                 targetRow = row + 1;
-    //                 qDebug() << "Нечётная строка, Нижняя неделя — вниз на" << targetRow;
-    //             }
-    //             else
-    //             {
-    //                 targetRow = row - 1;
-    //                 qDebug() << "Последняя строка, Нижняя неделя — вверх на" << targetRow;
-    //             }
-    //         }
-    //         else
-    //         {
-    //             // Чётная строка (0, 2, 4...) → переходим в нечётную (1, 3, 5...)
-    //             if (row - 1 >= 0)
-    //             {
-    //                 targetRow = row - 1;
-    //                 qDebug() << "Чётная строка, Нижняя неделя — вверх на" << targetRow;
-    //             }
-    //             else
-    //             {
-    //                 targetRow = row + 1;
-    //                 qDebug() << "Первая строка, Нижняя неделя — вниз на" << targetRow;
-    //             }
-    //         }
-    //     }
-    // }
-    // // СЦЕНАРИЙ 2: 1-я подгруппа раз в 2 недели + Верхняя/Нижняя неделя
-    // else if (comboChoice2.contains("1-я подгруппа раз в 2 недели"))
-    // {
-    //     qDebug() << "СЦЕНАРИЙ 2: 1-я подгруппа раз в 2 недели";
-
-    //     // Должна быть чётная строка (индекс 0, 2, 4...) И нечётный столбец (индекс 1, 3, 5...)
-    //     if (!isRowOdd && isColOdd)
-    //     {
-    //         if (comboChoice3.contains("Верхняя"))
-    //         {
-    //             targetRow = row;
-    //             qDebug() << "Верхняя неделя, чётная строка и нечётный столбец — остаёмся в" << targetRow;
-    //             // shouldMergeHorizontal остаётся false
-    //         }
-    //         else if (comboChoice3.contains("Нижняя"))
-    //         {
-    //             if (row + 1 < ui->tableWidget->rowCount())
-    //             {
-    //                 targetRow = row + 1;
-    //                 qDebug() << "Нижняя неделя, чётная строка и нечётный столбец — переходим в нижнюю ячейку на строку" << targetRow;
-    //                 // shouldMergeHorizontal остаётся false
-    //             }
-    //             else
-    //             {
-    //                 qDebug() << "Ошибка: нет нижней строки для перехода";
-    //                 rsc2->deleteLater();
-    //                 return;
-    //             }
-    //         }
-    //         else
-    //         {
-    //             qDebug() << "Ошибка: не выбрана Верхняя или Нижняя неделя";
-    //             rsc2->deleteLater();
-    //             return;
-    //         }
-    //     }
-    //     else if (!isColOdd)
-    //     {
-    //         // Чётный столбец — ничего не делаем
-    //         qDebug() << "Ошибка: ячейка в чётном столбце, сценарий 2 невозможен";
-    //         rsc2->deleteLater();
-    //         return;
-    //     }
-    //     else
-    //     {
-    //         // Нечётная строка (индекс 1, 3, 5...) — ошибка
-    //         qDebug() << "Ошибка: ячейка должна быть в чётной строке (визуально нечётной)";
-    //         rsc2->deleteLater();
-    //         return;
-    //     }
-    // }
-
-    // // СЦЕНАРИЙ 3: 2-я подгруппа раз в 2 недели + Верхняя/Нижняя неделя
-    // else if (comboChoice2.contains("2-я подгруппа раз в две недели"))  // Условие на выбор
-    // {
-    //     qDebug() << "СЦЕНАРИЙ 3: 2-я подгруппа раз в две недели";
-
-    //     // Объявляем переменные для четности
-    //     bool isRowOdd = (row % 2 != 0);    // НЕЧЕТНАЯ строка
-    //     bool isColOdd = (column % 2 != 0); // НЕЧЕТНЫЙ столбец
-
-    //     // Требуются: четная строка и четный столбец (для 2-й подгруппы)
-    //     // Значит: !isRowOdd && !isColOdd
-    //     if (!isRowOdd && !isColOdd) {
-    //         if (comboChoice3.contains("Верхняя")) {
-    //             targetRow = row;
-    //             qDebug() << "Верхняя неделя, четная строка и четный столбец — остаемся в " << targetRow;
-    //             // Дальнейшее действие, например, оставить текущую ячейку
-    //         }
-    //         else if (comboChoice3.contains("Нижняя")) {
-    //             if (row + 1 < ui->tableWidget->rowCount()) {
-    //                 targetRow = row + 1;
-    //                 qDebug() << "Нижняя неделя, четная строка и четный столбец — переходим в" << targetRow;
-    //                 // Действия перехода
-    //             } else {
-    //                 qDebug() << "Ошибка: нет следующей строки для перехода вниз.";
-    //                 rsc2->deleteLater();
-    //                 return;
-    //             }
-    //         } else {
-    //             qDebug() << "Ошибка: не выбрана Верхняя или Нижняя неделя.";
-    //             rsc2->deleteLater();
-    //             return;
-    //         }
-    //     }
-    //     else if (isColOdd || isRowOdd) {
-    //         // Если столбец или строка не соответствуют нужной
-    //         qDebug() << "Ошибка: ячейка не соответствует условию для 2-й подгруппы.";
-    //         rsc2->deleteLater();
-    //         return;
-    //     }
-    // }
-    // // СЦЕНАРИЙ 4: 1-я подгруппа раз в неделю + none
-    // else if (comboChoice2.contains("1-я подгруппа раз в неделю") && comboChoice3.contains("none")) {
-    //     bool isRowEven = (row % 2 == 0);
-    //     bool isColOdd = (column % 2 != 0);  // нечетный столбец
-    //     bool isRowOdd = (row % 2 != 0);     // нечетная строка
-    //     //bool isColEven = (column % 2 == 0);
-
-    //     qDebug() << "СЦЕНАРИЙ 4: 1-я подгруппа раз в неделю + none";
-
-    //     // Для четной строки + нечетного столбца — объединяем снизу
-    //     if (isRowEven && isColOdd) {
-    //         if (row + 1 < ui->tableWidget->rowCount()) {
-    //             targetRow = row;
-    //             shouldMergeVertical = true; // объединять снизу
-    //             qDebug() << "Ячейка в нечетном столбце и четной строке — объединение снизу.";
-    //         } else {
-    //             qDebug() << "Нет нижней строки для объединения.";
-    //             rsc2->deleteLater();
-    //             return;
-    //         }
-    //     }
-    //     // Для нечетной строки + нечетного столбца — объединяем сверху
-    //     else if (isRowOdd && isColOdd) {
-    //         if (row - 1 >= 0) {
-    //             targetRow = row - 1;
-    //             shouldMergeVertical = true; // объединять сверху
-    //             qDebug() << "Ячейка в нечетном столбце и нечетной строке — объединение сверху.";
-    //         } else {
-    //             qDebug() << "Нет верхней строки для объединения.";
-    //             rsc2->deleteLater();
-    //             return;
-    //         }
-    //     }
-    // }
-    // // СЦЕНАРИЙ 4: 2-я подгруппа раз в неделю + none
-    // else if (comboChoice2.contains("2-я подгруппа раз в неделю") && comboChoice3.contains("none")) {
-    //     bool isRowEven = (row % 2 == 0); // четная строка
-    //     bool isRowOdd = (row % 2 != 0);  // нечетная строка
-    //     bool isColEven = (column % 2 == 0); // четный столбец
-
-    //     qDebug() << "СЦЕНАРИЙ: 2-я подгруппа раз в неделю + none";
-
-    //     // Четный столбец + четная строка — объединение вниз
-    //     if (isColEven && isRowEven) {
-    //         if (row + 1 < ui->tableWidget->rowCount()) {
-    //             targetRow = row;
-    //             shouldMergeVertical = true; // объединить со следующей
-    //             qDebug() << "Четная строка + четный столбец — объединение снизу.";
-    //         } else {
-    //             qDebug() << "Нет нижней строки для объединения.";
-    //             rsc2->deleteLater();
-    //             return;
-    //         }
-    //     }
-    //     // Четный столбец + нечетная строка — объединение сверху
-    //     else if (isColEven && isRowOdd) {
-    //         if (row - 1 >= 0) {
-    //             targetRow = row - 1;
-    //             shouldMergeVertical = true; // объединить сверху
-    //             qDebug() << "Нечетная строка + четный столбец — объединение сверху.";
-    //         } else {
-    //             qDebug() << "Нет верхней строки для объединения.";
-    //             rsc2->deleteLater();
-    //             return;
-    //         }
-    //     }
-    // }
-    // else
-    // {
-    //     qDebug() << "Не совпадает ни с одним сценарием";
-    //     qDebug() << "Записываем текст в текущую ячейку";
-    // }
-
-    // qDebug() << "targetRow=" << targetRow << "shouldMergeHorizontal=" << shouldMergeHorizontal
-    //          << "shouldMergeVertical=" << shouldMergeVertical;
-
-    // // Проверка валидности
-    // if (targetRow < 0 || targetRow >= ui->tableWidget->rowCount())
-    // {
-    //     qDebug() << "ОШИБКА: targetRow вне диапазона";
-    //     rsc2->deleteLater();
-    //     return;
-    // }
-
-    // // Записываем текст
-    // if (!ui->tableWidget->item(targetRow, column))
-    //     ui->tableWidget->setItem(targetRow, column, new QTableWidgetItem());
-
-    // ui->tableWidget->item(targetRow, column)->setText(combinedText);
-    // ui->tableWidget->item(targetRow, column)->setTextAlignment(Qt::AlignHCenter | Qt::AlignVCenter);
-    // qDebug() << "Текст записан в ячейку [" << targetRow << "," << column << "]";
-
-    // // Горизонтальное объединение
-    // if (shouldMergeHorizontal && column + 1 < ui->tableWidget->columnCount())
-    // {
-    //     if (!ui->tableWidget->item(targetRow, column + 1))
-    //         ui->tableWidget->setItem(targetRow, column + 1, new QTableWidgetItem());
-
-    //     ui->tableWidget->setSpan(targetRow, column, 1, 2);
-    //     mergedLefts_.insert(QPair<int,int>(targetRow, column));
-    //     ui->tableWidget->item(targetRow, column + 1)->setText("");
-
-    //     qDebug() << "Горизонтальное объединение выполнено";
-    // }
-
-    // // Вертикальное объединение
-    // if (shouldMergeVertical && row + 1 < ui->tableWidget->rowCount())
-    // {
-    //     if (!ui->tableWidget->item(row + 1, column))
-    //         ui->tableWidget->setItem(row + 1, column, new QTableWidgetItem());
-
-    //     ui->tableWidget->setSpan(targetRow, column, 2, 1);
-    //     mergedLefts_.insert(QPair<int,int>(targetRow, column));
-    //     ui->tableWidget->item(row + 1, column)->setText("");
-
-    //     qDebug() << "Вертикальное объединение выполнено";
-    // }
-
-    // ui->tableWidget->resizeRowsToContents();
-    // rsc2->deleteLater();
-
-    // // 1. Принудительно завершаем редактирование через делегат (публичный способ)
-    // if (ui->tableWidget->isPersistentEditorOpen(ui->tableWidget->currentItem())) {
-    //     ui->tableWidget->closePersistentEditor(ui->tableWidget->currentItem());
-    // }
-
-    // // // 2. Снимаем выделение (синяя заливка)
-    // // ui->tableWidget->clearSelection();
-
-    // // // 3. Убираем пунктирную рамку фокуса с ячейки
-    // // ui->tableWidget->setCurrentItem(nullptr);
-
-    // // // 4. САМОЕ ВАЖНОЕ: Переводим фокус с таблицы на само окно.
-    // // // Это закроет активный текстовый редактор QLineEdit в ячейке.
-    // // this->setFocus();
-
-    // // // 5. На всякий случай сбрасываем состояние фокуса таблицы
-    // // ui->tableWidget->clearFocus();
-
-    // QTimer::singleShot(0, this, [this]()
-    // {
-    //     ui->tableWidget->clearSelection();
-    //     ui->tableWidget->setCurrentItem(nullptr);
-    //     ui->tableWidget->clearFocus();
-    //     this->setFocus();
-    // });
-
     if (editingEnabled)
         return;
 
-    // 1. ОПРЕДЕЛЯЕМ, КАКАЯ ТАБЛИЦА ВЫЗВАЛА ФУНКЦИЮ
+    // ОПРЕДЕЛЯЕМ, КАКАЯ ТАБЛИЦА ВЫЗВАЛА ФУНКЦИЮ
     QTableWidget *table = qobject_cast<QTableWidget*>(sender());
     if (!table) return;
 
@@ -2238,7 +1800,7 @@ void MainWindow::ClickedLeftButton(int row, int column)
 
     QPair<int,int> key(row, column);
 
-    // 2. ЛОГИКА РАЗЪЕДИНЕНИЯ (используем table вместо ui->tableWidget)
+    // ЛОГИКА РАЗЪЕДИНЕНИЯ
     if (mergedLefts_.contains(key))
     {
         table->setSpan(row, column, 1, 1);
@@ -2250,26 +1812,23 @@ void MainWindow::ClickedLeftButton(int row, int column)
         return;
     }
 
-    // Выполняем диалог
     if (rsc2->exec() != QDialog::Accepted)
     {
         rsc2->deleteLater();
         return;
     }
 
-    // Читаем данные из диалогового окна
     QString comboChoice2 = rsc2->ui->comboBox_2->currentText().trimmed();
     QString comboChoice3 = rsc2->ui->comboBox_3->currentText().trimmed();
     QString combinedText = rsc2->text11 + "\n" + rsc2->text22 + "\n" + rsc2->text33 + "\n" + rsc2->text44;
 
-    // Логика чётности
+    // Логика чётности строки (недели)
     bool isRowOdd = (row % 2 == 1);
-    bool isColOdd = (column % 2 == 1);
     int targetRow = row;
     bool shouldMergeHorizontal = false;
     bool shouldMergeVertical = false;
 
-    // --- СЦЕНАРИИ ОБЪЕДИНЕНИЯ (универсальный код для любой таблицы) ---
+    // СЦЕНАРИИ
     if (comboChoice2 == "none" && (comboChoice3.contains("Верхняя") || comboChoice3.contains("Нижняя")))
     {
         shouldMergeHorizontal = true;
@@ -2280,13 +1839,11 @@ void MainWindow::ClickedLeftButton(int row, int column)
             else targetRow = (row - 1 >= 0) ? row - 1 : row + 1;
         }
     }
-    // ... здесь остальные сценарии 2, 3, 4 (замените в них ui->tableWidget на table) ...
     else if (comboChoice2.contains("1-я подгруппа раз в неделю") && comboChoice3.contains("none")) {
         targetRow = (row % 2 == 0) ? row : row - 1;
         shouldMergeVertical = true;
     }
 
-    // ПРОВЕРКА ВАЛИДНОСТИ И ЗАПИСЬ
     if (targetRow < 0 || targetRow >= table->rowCount()) {
         rsc2->deleteLater();
         return;
@@ -2298,7 +1855,7 @@ void MainWindow::ClickedLeftButton(int row, int column)
     table->item(targetRow, column)->setText(combinedText);
     table->item(targetRow, column)->setTextAlignment(Qt::AlignCenter);
 
-    // ВЫПОЛНЕНИЕ ОБЪЕДИНЕНИЙ В ТЕКУЩЕЙ ТАБЛИЦЕ
+    // ОБЪЕДИНЕНИЯ
     if (shouldMergeHorizontal && column + 1 < table->columnCount())
     {
         if (!table->item(targetRow, column + 1))
@@ -2320,7 +1877,6 @@ void MainWindow::ClickedLeftButton(int row, int column)
     table->resizeRowsToContents();
     rsc2->deleteLater();
 
-    // Сброс фокуса и выделения
     QTimer::singleShot(0, this, [table, this]() {
         table->clearSelection();
         table->setCurrentItem(nullptr);
@@ -2330,88 +1886,29 @@ void MainWindow::ClickedLeftButton(int row, int column)
 
 }
 
-// Реализация функции определения целевой ячейки
-QPair<int,int> MainWindow::determineTargetCell(int row, int column,
-                        const QString &combo2, const QString &combo3, int rowCount)
-{
-    int targetRow = row;
-    int targetCol = column;
-    bool isOddRow = (row % 2 == 1);
-    //bool isOddColumn = (column % 2 == 1);
-
-    // Обработка для "none" и "Верхняя/Нижняя"
-    if (combo2.trimmed().compare("none", Qt::CaseInsensitive) == 0 &&
-        (combo3.contains("Верхняя", Qt::CaseInsensitive) || combo3.contains("Нижняя", Qt::CaseInsensitive)))
-    {
-        if (combo3.contains("Верхняя", Qt::CaseInsensitive))
-        {
-            // Остаемся в текущей строке
-            targetRow = row;
-        }
-        else if (combo3.contains("Нижняя", Qt::CaseInsensitive))
-        {
-            if (isOddRow)
-            {
-                // Вниз или вверх
-                targetRow = (row + 1 < rowCount) ? row + 1 : row - 1;
-            }
-            else
-            {
-                targetRow = (row - 1 >= 0) ? row - 1 : row + 1;
-            }
-        }
-    }
-    // Обработка для других условий подгрупп
-    else if (combo2.contains("1-я подгруппа раз в 2 недели", Qt::CaseInsensitive) &&
-             combo3.contains("Верхняя", Qt::CaseInsensitive))
-    {
-        // Например, остаемся или переходим в соответствии с логикой
-        // Можно добавить логику, аналогичную вам
-        targetRow = row;
-    }
-    else if (combo2.contains("2-я подгруппа раз в 2 недели", Qt::CaseInsensitive) &&
-             combo3.contains("Нижняя", Qt::CaseInsensitive))
-    {
-        // Переход
-        if (isOddRow)
-        {
-            targetRow = (row + 1 < rowCount) ? row + 1 : row - 1;
-        }
-        else
-        {
-            targetRow = (row - 1 >= 0) ? row - 1 : row + 1;
-        }
-    }
-    else if (combo2.contains("2-я подгруппа раз в неделю", Qt::CaseInsensitive) &&
-             combo3.trimmed().compare("none", Qt::CaseInsensitive) == 0)
-    {
-        // Ваши условия для этой группы
-        targetRow = row;
-    }
-
-    // Вернуть вычисленную целевую ячейку
-    return QPair<int, int>(targetRow, targetCol);
-}
-
 void MainWindow::deleteLesson()
 {
-    // int row = ui->tableWidget->currentRow();
-    // int column = ui->tableWidget->currentColumn();
-    // if (row < 0 || column < 0) return;
-    // if (auto *it = ui->tableWidget->item(row, column))
-    // {
-    //     it->setText(QString());
-    // }
+    // 1. Динамически определяем, какая таблица сейчас активна
+    QTableWidget *table = qobject_cast<QTableWidget*>(sender());
 
-    // 1. Получаем список всех выделенных ячеек
-    QList<QTableWidgetItem*> items = ui->tableWidget->selectedItems();
+    if (!table) {
+        QWidget* currentTab = ui->tabWidget->currentWidget();
+        if (currentTab) {
+            table = currentTab->findChild<QTableWidget*>();
+        }
+    }
 
+    if (!table) return;
+
+    // 2. Получаем список всех выделенных ячеек именно из этой таблицы
+    QList<QTableWidgetItem*> items = table->selectedItems();
     if (items.isEmpty()) return;
 
-    // 2. Блокируем сигналы, чтобы не вызывать Sync/Save на каждую ячейку (избегаем спама в логах)
-    ui->tableWidget->blockSignals(true);
+    // 3. Блокируем сигналы текущей таблицы для производительности
+    table->blockSignals(true);
 
-    // 3. Проходим циклом по всем выделенным элементам и очищаем их
+    // 4. Проходим циклом по всем выделенным элементам и очищаем их
+    // Используем std::as_const для предотвращения лишнего копирования списка
     for (QTableWidgetItem* it : std::as_const(items))
     {
         if (it)
@@ -2420,10 +1917,12 @@ void MainWindow::deleteLesson()
         }
     }
 
-    // 4. Разблокируем сигналы и обновляем вьюпорт
-    ui->tableWidget->blockSignals(false);
-    ui->tableWidget->viewport()->update();
+    // 5. Разблокируем сигналы и обновляем область отображения
+    table->blockSignals(false);
+    table->viewport()->update();
 
+    // Можно вывести уведомление в статус-бар о количестве удаленных ячеек
+    ui->statusbar->showMessage(QString("Очищено ячеек: %1").arg(items.size()), 3000);
 }
 
 void MainWindow::aboutLessons()
@@ -2439,286 +1938,6 @@ void MainWindow::aboutLessons()
             screen->geometry()));
 
     rsc3->exec();
-}
-
-bool MainWindow::connectToDatabase(QSqlDatabase &db, QString path)
-{
-    db = QSqlDatabase::addDatabase("QSQLITE", "connection1");
-    db.setDatabaseName(path); // путь к вашей базе
-
-    if (!db.open()) {
-        qDebug() << "Ошибка подключения:" << db.lastError().text();
-        return false;
-    }
-    qDebug() << "База подключена!";
-    return true;
-}
-
-void MainWindow::medgehorizontalcells()
-{
-    if (!ui->tableWidget) return;
-    int row = ui->tableWidget->currentRow();
-    int col = ui->tableWidget->currentColumn();
-    if (row < 0 || col < 0) return;
-
-    int anchorRow = row, anchorCol = col;
-    bool found = false;
-    for (int r = 0; r <= row && !found; ++r) {
-        for (int c = 0; c <= col; ++c) {
-            int rs = ui->tableWidget->rowSpan(r, c);
-            int cs = ui->tableWidget->columnSpan(r, c);
-            if ((rs > 1 || cs > 1) && r <= row && row < r + rs && c <= col && col < c + cs) {
-                anchorRow = r; anchorCol = c; found = true; break;
-            }
-        }
-    }
-    // если не найден объединённый anchor, но возможно сам (row,col) — проверим
-    int rspan = ui->tableWidget->rowSpan(anchorRow, anchorCol);
-    int cspan = ui->tableWidget->columnSpan(anchorRow, anchorCol);
-    if (rspan == 1 && cspan == 1) return; // ничего не разделять
-
-    // снимем span
-    ui->tableWidget->setSpan(anchorRow, anchorCol, 1, 1);
-
-    // восстановим дочерние ячейки
-    for (int dr = 0; dr < rspan; ++dr) {
-        for (int dc = 0; dc < cspan; ++dc) {
-            int r = anchorRow + dr;
-            int c = anchorCol + dc;
-            if (r == anchorRow && c == anchorCol) continue;
-            if (!ui->tableWidget->item(r, c)) {
-                QPair<int,int> key(r, c);
-                if (savedCells_.contains(key)) {
-                    ui->tableWidget->setItem(r, c, new QTableWidgetItem(savedCells_.value(key)));
-                    savedCells_.remove(key);
-                } else {
-                    ui->tableWidget->setItem(r, c, new QTableWidgetItem(QString()));
-                }
-            }
-        }
-    }
-    mergedLefts_.remove(qMakePair(anchorRow, anchorCol));
-    ui->tableWidget->resizeRowsToContents();
-}
-
-void MainWindow::openLesson()
-{
-    QSqlDatabase db;
-    controlString = "up_week";
-    verticalControlString = "up_group";
-
-    if (connectToDatabase(db, "/home/elf/sqlite_prog/qtsqlite/base/lesson_base.db"))
-    {
-        // Проверяем все таблицы в БД
-        QStringList tables = db.tables();
-        qDebug() << "Таблицы в БД:" << tables;
-
-        // Проверяем каждую таблицу
-        for (const QString &tableName : std::as_const(tables))
-        {
-            QSqlQuery countQuery(db);
-            if (countQuery.exec(QString("SELECT COUNT(*) FROM %1").arg(tableName)))
-            {
-                countQuery.next();
-                int count = countQuery.value(0).toInt();
-                qDebug() << "Таблица" << tableName << "- строк:" << count;
-
-                // Выводим первую строку
-                QSqlQuery sampleQuery(db);
-                if (sampleQuery.exec(QString("SELECT * FROM %1 LIMIT 1").arg(tableName)))
-                {
-                    if (sampleQuery.next())
-                    {
-                        QSqlRecord rec = sampleQuery.record();
-                        qDebug() << "Первая строка из" << tableName << ":";
-                        for (int i = 0; i < rec.count(); ++i)
-                        {
-                            qDebug() << rec.fieldName(i) << "=" << sampleQuery.value(i).toString();
-                        }
-                    }
-                }
-            }
-        }
-
-        loadAndAutoMergeFromDb2(db, ui->tableWidget, controlString, verticalControlString);
-    }
-}
-
-void MainWindow::loadAndAutoMergeFromDb2(QSqlDatabase &db,QTableWidget *tableWidget,
-            const QString &controlString,const QString &verticalControlString)  // vertical tag
-{
-
-    if (!db.isOpen()) {
-        qDebug() << "Database is not open.";
-        return;
-    }
-
-    QSqlQuery query(db);
-    if (!query.exec("SELECT * FROM Lessons")) {
-        qDebug() << "Error executing query:" << query.lastError().text();
-        return;
-    }
-
-    QVector<QStringList> rowsData;
-    int columnCount = 0;
-
-    while (query.next()) {
-        if (columnCount == 0)
-            columnCount = query.record().count();
-
-        QStringList rowFields;
-        for (int c = 0; c < columnCount; ++c) {
-            rowFields << query.value(c).toString();
-        }
-        rowsData.append(rowFields);
-    }
-
-    qDebug() << "Загружено строк из БД:" << rowsData.size();
-
-    tableWidget->clear();
-    tableWidget->setColumnCount(columnCount);
-
-    if (!rowsData.isEmpty()) {
-        QSqlQuery headQuery(db);
-        if (headQuery.exec("SELECT * FROM Lessons LIMIT 1")) {
-            QSqlRecord headRec = headQuery.record();
-            QStringList headers;
-            for (int i = 0; i < columnCount; ++i)
-                headers << headRec.fieldName(i);
-            tableWidget->setHorizontalHeaderLabels(headers);
-            qDebug() << "Заголовки установлены:" << headers;
-        }
-    }
-
-    tableWidget->horizontalHeader()->setVisible(true);
-    tableWidget->verticalHeader()->setVisible(true);
-    tableWidget->setRowCount(rowsData.size());
-
-    QSet<QPair<int, int>> mergedCells;
-    int currentRow = 0;
-
-    for (const QStringList &rowFields : rowsData) {
-        tableWidget->setVerticalHeaderItem(currentRow, new QTableWidgetItem(QString::number(currentRow + 1)));
-
-        for (int col = 0; col < columnCount; ++col) {
-            if (mergedCells.contains(qMakePair(currentRow, col))) {
-                qDebug() << "Пропускаем уже объединённую ячейку" << currentRow << col;
-                continue;
-            }
-
-            QString raw = rowFields.value(col);
-
-            // Парсим: текст\npositionKey\nlessonType
-            QStringList parts = raw.split('\n');
-
-            QString displayText = parts.value(0, "").trimmed();  // Основной текст (отображаем)
-            QString positionKey = parts.value(1, "").trimmed();  // Ключ позиции (не отображаем)
-            QString lessonType = parts.value(2, "").trimmed();   // Тип занятия (не отображаем)
-
-            qDebug() << "Row:" << currentRow << "Col:" << col
-                     << "positionKey:" << positionKey
-                     << "displayText:" << displayText;
-
-            if (!tableWidget->item(currentRow, col))
-                tableWidget->setItem(currentRow, col, new QTableWidgetItem());
-
-            QTableWidgetItem *item = tableWidget->item(currentRow, col);
-
-            // Устанавливаем ПОЛНОЕ содержимое в UserRole (для saveBase)
-            item->setData(Qt::UserRole, displayText);
-
-            // Обрабатываем в зависимости от ключа позиции
-            if (positionKey == "up_left" || positionKey == "up_right" ||
-                positionKey == "down_left" || positionKey == "down_right") {
-
-                item->setText(displayText);
-                item->setTextAlignment(Qt::AlignHCenter | Qt::AlignVCenter);
-                qDebug() << "  Установлена обычная ячейка";
-            }
-            else if (positionKey == "left_right_up" || positionKey == "left_right_down") {
-
-                if (col + 1 < tableWidget->columnCount()) {
-                    if (!tableWidget->item(currentRow, col + 1))
-                        tableWidget->setItem(currentRow, col + 1, new QTableWidgetItem());
-
-                    tableWidget->setSpan(currentRow, col, 1, 2);
-                    mergedCells.insert(qMakePair(currentRow, col + 1));
-
-                    item->setText(displayText);
-                    item->setTextAlignment(Qt::AlignHCenter | Qt::AlignVCenter);
-                    qDebug() << "  Объединено горизонтально";
-                } else {
-                    item->setText(displayText);
-                    item->setTextAlignment(Qt::AlignHCenter | Qt::AlignVCenter);
-                }
-            }
-            else if (positionKey == "up_down_left" || positionKey == "up_down_right") {
-
-                if (currentRow + 1 < tableWidget->rowCount()) {
-                    if (!tableWidget->item(currentRow + 1, col))
-                        tableWidget->setItem(currentRow + 1, col, new QTableWidgetItem());
-
-                    tableWidget->setSpan(currentRow, col, 2, 1);
-                    mergedCells.insert(qMakePair(currentRow + 1, col));
-
-                    item->setText(displayText);
-                    item->setTextAlignment(Qt::AlignHCenter | Qt::AlignVCenter);
-                    qDebug() << "  Объединено вертикально";
-                } else {
-                    item->setText(displayText);
-                    item->setTextAlignment(Qt::AlignHCenter | Qt::AlignVCenter);
-                }
-            }
-            else {
-                // Пустой или неизвестный ключ
-                item->setText(displayText);
-                item->setTextAlignment(Qt::AlignHCenter | Qt::AlignVCenter);
-                if (positionKey.isEmpty()) {
-                    qDebug() << "  Пустой ключ позиции (обычная ячейка)";
-                } else {
-                    qDebug() << "  Неизвестный ключ позиции:" << positionKey;
-                }
-            }
-        }
-        ++currentRow;
-    }
-
-    tableWidget->resizeRowsToContents();
-    tableWidget->viewport()->update();
-    ui->tableWidget->hideColumn(0);
-}
-
-bool MainWindow::medgevertikalcells(QTableWidget *tableWidget,
-                                    int row,
-                                    int col,
-                                    const QStringList &nonEmptyParts,
-                                    const QString &verticalControlString,
-                                    QSet<QPair<int,int>> &mergedPositions)
-{
-    if (!tableWidget) return false;
-    if (row + 1 >= tableWidget->rowCount()) return false;
-    if (nonEmptyParts.size() != 5) return false;
-    if (nonEmptyParts.at(4).trimmed().compare(verticalControlString.trimmed(), Qt::CaseInsensitive) != 0)
-        return false;
-
-    QString mergedText = nonEmptyParts.mid(0, 4).join("\n");
-
-    if (!tableWidget->item(row, col))
-        tableWidget->setItem(row, col, new QTableWidgetItem());
-    if (!tableWidget->item(row + 1, col))
-        tableWidget->setItem(row + 1, col, new QTableWidgetItem());
-
-    tableWidget->setSpan(row, col, 2, 1);
-    mergedPositions.insert(qMakePair(row, col));
-
-    tableWidget->item(row, col)->setText(mergedText);
-    tableWidget->item(row, col)->setTextAlignment(Qt::AlignHCenter | Qt::AlignVCenter);
-
-    tableWidget->item(row + 1, col)->setText("");
-    tableWidget->item(row + 1, col)->setTextAlignment(Qt::AlignHCenter | Qt::AlignVCenter);
-
-    qDebug() << "Merged vertically at" << row << col;
-    return true;
 }
 
 void MainWindow::onItemChanged()
@@ -2885,439 +2104,74 @@ bool MainWindow::saveBase(QTableWidget *table, const QString &dbTable)
     return success;
 }
 
-// Вспомогательная функция для определения позиции
-QString MainWindow::getPositionKey(int row, int col)
-{
-    bool isRowOdd = (row % 2 == 1);
-    bool isColOdd = (col % 2 == 1);
-
-    if (!isRowOdd && !isColOdd)
-        return "up_left";
-    else if (!isRowOdd && isColOdd)
-        return "up_right";
-    else if (isRowOdd && !isColOdd)
-        return "down_left";
-    else
-        return "down_right";
-}
-
 void MainWindow::loadBase(QTableWidget *table, const QString &dbTable)
 {
-    // ui->tableWidget->blockSignals(true);
-    // ui->tableWidget->clearSpans();
+    if (!table) return;
 
-    // // Чистим текст и ставим центрирование (высота строк НЕ меняется)
-    // for (int r = 0; r < ui->tableWidget->rowCount(); ++r) {
-    //     for (int c = 1; c < ui->tableWidget->columnCount(); ++c) {
-    //         if (auto item = ui->tableWidget->item(r, c)) {
-    //             item->setText("");
-    //             item->setTextAlignment(Qt::AlignCenter);
-    //         }
-    //     }
-    // }
+    // Блокируем сигналы именно той таблицы, которую загружаем
+    table->blockSignals(true);
+    table->clearSpans();
 
-    // QSqlQuery query("SELECT row_num, col_num, content FROM lessons_spring_semester", db);
-    // while (query.next())
-    // {
-    //     int r = query.value(0).toInt();
-    //     int c = query.value(1).toInt();
-    //     QString fullContent = query.value(2).toString();
-
-    //     if (r < ui->tableWidget->rowCount() && c < ui->tableWidget->columnCount())
-    //     {
-    //         QTableWidgetItem *item = ui->tableWidget->item(r, c);
-    //         if (!item) continue;
-    //         item->setTextAlignment(Qt::AlignCenter);
-
-    //         if (fullContent == "[EMPTY]") {
-    //             item->setText("");
-    //         }
-    //         else {
-    //             QStringList parts = fullContent.split('\n');
-    //             // Отображаем первые 4 строки
-    //             QStringList displayLines;
-    //             for (int i = 0; i < qMin(4, parts.size()); ++i) displayLines << parts.at(i);
-    //             item->setText(displayLines.join("\n"));
-
-    //             // Восстановление объединений по ключам
-    //             if (fullContent.contains("left_right_up") || fullContent.contains("left_right_down")) {
-    //                 ui->tableWidget->setSpan(r, c, 1, 2);
-    //             }
-    //             else if (fullContent.contains("up_down_left") || fullContent.contains("up_down_right")) {
-    //                 ui->tableWidget->setSpan(r, c, 2, 1);
-    //             }
-    //             else if (fullContent.contains("full_cell")) {
-    //                 ui->tableWidget->setSpan(r, c, 2, 2);
-    //             }
-    //         }
-    //     }
-    // }
-
-    // ui->tableWidget->blockSignals(false);
-    // ui->tableWidget->viewport()->update();
-    // message_action("Success", "Загрузка завершена: позиции восстановлены");
-}
-
-// void MainWindow::reloadAllTables()
-// {
-//     // for (auto it = tables.begin(); it != tables.end(); ++it) {
-//     //     QString tableName = it.key();
-//     //     QTableWidget* tableWidget = it.value();
-
-//     //     loadTableData(currentTableName);
-//     // }
-
-//     for (auto it = tables.begin(); it != tables.end(); ++it) {
-//         QString tableName = it.key();
-//         // можно сразу вызвать нужную функцию
-//         //loadTableData(tableName);
-//     }
-// }
-
-// void MainWindow::loadTableData(const QString& tableName)
-// {
-//     /*QTableWidget* tableWidget = tables.value(tableName);
-//     if (!tableWidget) return;
-
-//     // Полностью очищаем таблицу
-//     tableWidget->setRowCount(0);
-
-//     QSqlQuery query(QString("SELECT id, name, value FROM \"%1\"").arg(tableName));
-//     while (query.next())
-//     {
-//         int row = tableWidget->rowCount();  // текущий индекс
-//         tableWidget->insertRow(row);
-
-//         tableWidget->setItem(row, 0, new QTableWidgetItem(QString::number(query.value(0).toInt())));
-//         tableWidget->setItem(row, 1, new QTableWidgetItem(query.value(1).toString()));
-//         tableWidget->setItem(row, 2, new QTableWidgetItem(query.value(2).toString()));
-//     }*/
-
-//     if (tableName.isEmpty()) {
-//         qWarning() << "Пустое название таблицы";
-//         return;
-//     }
-
-//     QTableWidget* tableWidget = ui->tableWidget; // или tables.value(tableName) если используете map
-
-//     if (!tableWidget) {
-//         qWarning() << "TableWidget не найден";
-//         return;
-//     }
-
-//     // Получаем структуру таблицы
-//     QSqlQuery structQuery;
-//     QString structSql = QString("PRAGMA table_info(\"%1\")").arg(tableName);
-
-//     if (!structQuery.exec(structSql)) {
-//         qWarning() << "Ошибка получения структуры таблицы:" << structQuery.lastError().text();
-//         return;
-//     }
-
-//     QStringList columnNames;
-//     while (structQuery.next()) {
-//         columnNames << structQuery.value(1).toString(); // имя колонки
-//     }
-
-//     if (columnNames.isEmpty()) {
-//         qWarning() << "Таблица не имеет колонок";
-//         return;
-//     }
-
-//     qDebug() << "Колонки таблицы:" << columnNames;
-
-//     // Полностью очищаем таблицу виджета
-//     tableWidget->clear();
-//     tableWidget->setRowCount(0);
-//     tableWidget->setColumnCount(columnNames.size());
-//     tableWidget->setHorizontalHeaderLabels(columnNames);
-
-//     // Загружаем данные
-//     QSqlQuery query;
-//     QString selectSql = QString("SELECT %1 FROM \"%2\"")
-//                             .arg(columnNames.join(", "), tableName);
-
-//     qDebug() << "SQL:" << selectSql;
-
-//     if (!query.exec(selectSql)) {
-//         qWarning() << "Ошибка при выполнении запроса:" << query.lastError().text();
-//         return;
-//     }
-
-//     // Заполняем строки данными
-//     int row = 0;
-//     while (query.next()) {
-//         tableWidget->insertRow(row);
-
-//         for (int col = 0; col < columnNames.size(); ++col) {
-//             QString value = query.value(col).toString();
-//             tableWidget->setItem(row, col, new QTableWidgetItem(value));
-//         }
-//         ++row;
-//     }
-
-//     // Если таблица пуста, добавляем пустые строки согласно размерности
-//     if (row == 0) {
-//         int defaultRows = 10; // или получите из переменной класса
-//         tableWidget->setRowCount(defaultRows);
-
-//         for (int r = 0; r < defaultRows; ++r) {
-//             for (int c = 0; c < columnNames.size(); ++c) {
-//                 if (!tableWidget->item(r, c)) {
-//                     tableWidget->setItem(r, c, new QTableWidgetItem(""));
-//                 }
-//             }
-//         }
-//         qDebug() << "Пустая таблица загружена с" << defaultRows << "строками";
-//     }
-
-//     qDebug() << "Загружено строк:" << row;
-// }
-
-void MainWindow::loadTableFromDatabase(const QString &tableName, QTableWidget *tableWidget)
-{
-    if (!db.isOpen()) {
-        return;
-    }
-
-    // Очищаем таблицу
-    tableWidget->setRowCount(0);
-
-    // Загружаем данные из БД
-    QString sql = QString("SELECT id, name, value FROM \"%1\"").arg(tableName);
-    QSqlQuery query;
-    query.prepare(sql);
-
-    if (!query.exec()) {
-        qDebug() << "Ошибка загрузки таблицы" << tableName << ":" << query.lastError().text();
-        return;
-    }
-
-    int row = 0;
-    while (query.next()) {
-        tableWidget->insertRow(row);
-
-        tableWidget->setItem(row, 0, new QTableWidgetItem(query.value(0).toString())); // id
-        tableWidget->setItem(row, 1, new QTableWidgetItem(query.value(1).toString())); // name
-        tableWidget->setItem(row, 2, new QTableWidgetItem(query.value(2).toString())); // value
-
-        row++;
-    }
-
-    // Добавляем несколько пустых строк для ввода новых данных
-    for (int i = 0; i < 5; ++i) {
-        tableWidget->insertRow(tableWidget->rowCount());
-    }
-
-    qDebug() << "Всего таблиц загружено:" << tables.size();
-}
-
-QString MainWindow::getUserDataForTable(const QString& tableName, const QString& field, int row)
-{
-    QTableWidget* table = tables[tableName];
-
-    if (field == "id") {
-        return table->item(row, 0) ? table->item(row, 0)->text() : "";
-    } else if (field == "name") {
-        return table->item(row, 1) ? table->item(row, 1)->text() : "";
-    } else if (field == "value") {
-        return table->item(row, 2) ? table->item(row, 2)->text() : "0";
-    }
-    return "";
-}
-
-// Получение id текущей строки — например, из скрытого столбца или данных
-int MainWindow::getCurrentItemId(const QString& tableName, int row)
-{
-    if (!tables.contains(tableName)) {
-        qWarning() << "Table not found:" << tableName;
-        return -1;
-    }
-
-    QTableWidget* table = tables[tableName];
-    if (table->item(row, 0))
-        return table->item(row, 0)->text().toInt();
-    return -1;
-}
-
-void MainWindow::addLinesComboBox()
-{
-    if (!lessonList) return;
-
-    lessonList->clear();
-
-    QSqlQuery q;
-    // Исключаем системные таблицы sqlite
-    if (!q.exec("SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'"))
-    {
-        qWarning() << "DB error:" << q.lastError().text();
-        return;
-    }
-
-    QStringList tableNames;
-
-    while (q.next()) {
-        QString name = q.value(0).toString().trimmed();
-        tableNames.append(name);
-    }
-
-    lessonList->addItems(tableNames);
-    qDebug() << "Loaded table names:" << tableNames;
-}
-
-void MainWindow::addLineslessonList()
-{
-    if (!lessonList) {
-        qWarning() << "lessonList is nullptr!";
-        lessonList = new QComboBox(this);  // Переинициализируем, если нужно
-    }
-
-    lessonList->clear();
-
-    QSqlQuery q;
-    // Исключаем системные таблицы sqlite
-    if (!q.exec("SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'"))
-    {
-        qWarning() << "DB error:" << q.lastError().text();
-        return;
-    }
-
-    QStringList tableNames;
-
-    while (q.next()) {
-        QString name = q.value(0).toString().trimmed();
-        tableNames.append(name);
-    }
-
-    lessonList->addItems(tableNames);
-    qDebug() << "Loaded table names:" << tableNames;
-
-}
-
-int MainWindow::nextPageNumberFromDb()
-{
-    QSqlQuery q;
-    // Execute query to find all tables starting with 'page'
-    if (!q.exec("SELECT name FROM sqlite_master WHERE type='table' AND name LIKE 'page%'"))
-    {
-        qWarning() << "DB error (LIKE 'page%'):" << q.lastError().text();
-        return 1; // Return 1 by default in case of error
-    }
-
-    int maxN = 0;
-    // Declare the QRegularExpression as static here
-    static const QRegularExpression re("^page(\\d+)$");
-
-    while (q.next()) {
-        QString name = q.value(0).toString().trimmed();
-
-        QRegularExpressionMatch m = re.match(name);
-        if (!m.hasMatch()) {
-            qDebug() << "Skipping non-matching table name:" << name;
-            continue;
+    // Чистим текст и ставим центрирование во всей целевой таблице
+    for (int r = 0; r < table->rowCount(); ++r) {
+        for (int c = 1; c < table->columnCount(); ++c) {
+            if (auto item = table->item(r, c)) {
+                item->setText("");
+                item->setTextAlignment(Qt::AlignCenter);
+            }
         }
-
-        bool ok = false;
-        int n = m.captured(1).toInt(&ok);
-        if (!ok) {
-            qDebug() << "Failed to parse number from:" << name;
-            continue;
-        }
-        if (n > maxN) maxN = n;
     }
 
-    int next = maxN + 1;
-    qDebug() << "nextPageNumberFromDb: maxN =" << maxN << " next =" << next;
-    return next;
+    // Используем dbTable в SQL-запросе
+    QSqlQuery query(QString("SELECT row_num, col_num, content FROM %1").arg(dbTable), db);
+
+    while (query.next())
+    {
+        int r = query.value(0).toInt();
+        int c = query.value(1).toInt();
+        QString fullContent = query.value(2).toString();
+
+        if (r < table->rowCount() && c < table->columnCount())
+        {
+            QTableWidgetItem *item = table->item(r, c);
+            if (!item) continue;
+
+            item->setTextAlignment(Qt::AlignCenter);
+
+            if (fullContent == "[EMPTY]") {
+                item->setText("");
+            }
+            else {
+                QStringList parts = fullContent.split('\n');
+                // Отображаем первые 4 строки
+                QStringList displayLines;
+                for (int i = 0; i < qMin(4, parts.size()); ++i) {
+                    displayLines << parts.at(i);
+                }
+                item->setText(displayLines.join("\n"));
+
+                // Восстановление объединений по ключам в целевой таблице
+                if (fullContent.contains("left_right_up") || fullContent.contains("left_right_down")) {
+                    table->setSpan(r, c, 1, 2);
+                }
+                else if (fullContent.contains("up_down_left") || fullContent.contains("up_down_right")) {
+                    table->setSpan(r, c, 2, 1);
+                }
+                else if (fullContent.contains("full_cell")) {
+                    table->setSpan(r, c, 2, 2);
+                }
+            }
+        }
+    }
+
+    table->blockSignals(false);
+    table->viewport()->update();
+
+    qDebug() << "Загружена таблица:" << dbTable;
 }
 
-void MainWindow::CreateNewTable(int pageNum)
+void MainWindow::CreateNewTable()
 {
-
-    /*pageNum = nextPageNumberFromDb();
-    //QString name = QString("Lessons%1").arg(pageNum);
-    QString name = lesson_name;
-
-    QSqlQuery q;
-    QString create = QString("CREATE TABLE IF NOT EXISTS \"%1\" (id INTEGER PRIMARY KEY AUTOINCREMENT, Понедельник TEXT, "
-                             "Понедельник_2 TEXT, Вторник TEXT, Вторник_2 TEXT, Среда TEXT, Среда_2 TEXT,"
-                             "Четверг TEXT, Четверг_2 TEXT, Пятница TEXT, Пятница_2 TEXT, Суббота TEXT, Суббота_2 TEXT)").arg(lesson_name);
-    if (!q.exec(create)) { qWarning() << "Create failed:" << q.lastError().text(); return; }
-
-    QSqlQuery ins;
-    QString insSql = QString("INSERT INTO \"%1\" (Понедельник, Понедельник_2, Вторник, Вторник_2, Среда, Среда_2,"
-                             "Четверг, Четверг_2, Пятница, Пятница_2, Суббота, Суббота_2) VALUES "
-                             "(:Понедельник, :Понедельник_2, :Вторник, :Вторник_2, :Среда, :Среда_2,"
-                             ":Четверг, :Четверг_2, :Пятница, :Пятница_2, :Суббота, :Суббота_2)").arg(lesson_name);
-
-    if (!ins.prepare(insSql))
-    {
-        qWarning() << ins.lastError().text();
-        return;
-    }
-
-    ins.bindValue("name", " ");
-    ins.bindValue(":name", " ");
-    ins.exec();
-
-    ins.bindValue("name_2", " ");
-    ins.bindValue(":name_2", " ");
-    ins.exec();
-
-    ins.bindValue("name_3", " ");
-    ins.bindValue(":name_3", " ");
-    ins.exec();
-
-    ins.bindValue("name_4", " ");
-    ins.bindValue(":name_4", " ");
-    ins.exec();
-
-    ins.bindValue("name_5", " ");
-    ins.bindValue(":name_5", " ");
-    ins.exec();
-
-    ins.bindValue("name_6", " ");
-    ins.bindValue(":name_6", " ");
-    ins.exec();
-
-    ins.bindValue("name_7", " ");
-    ins.bindValue(":name_7", " ");
-    ins.exec();
-
-    ins.bindValue("name_8", " ");
-    ins.bindValue(":name_8", " ");
-    ins.exec();
-
-    ins.bindValue("name_9", " ");
-    ins.bindValue(":name_9", " ");
-    ins.exec();
-
-    ins.bindValue("name_10", " ");
-    ins.bindValue(":name_10", " ");
-    ins.exec();
-
-    ins.bindValue("name_11", " ");
-    ins.bindValue(":name_11", " ");
-    ins.exec();
-
-    ins.bindValue("name_12", " ");
-    ins.bindValue(":name_12", " ");
-    ins.exec();
-
-    int idx = ui->comboBox->findText(lesson_name);
-    if (idx < 0)
-    {
-        ui->comboBox->addItem(lesson_name, pageNum); // <- важна вторая переменная
-        idx = ui->comboBox->findText(lesson_name);
-    } else
-    {
-        ui->comboBox->setItemData(idx, pageNum); // обновляем data, если элемент уже был
-    }
-
-    qDebug() << "Added combo item:" << lesson_name << "index=" << idx << "data=" << ui->comboBox->itemData(idx);
-    ui->comboBox->setCurrentIndex(idx); // вызовет слот загрузки*/
-
-    pageNum = nextPageNumberFromDb();
     QString name = lesson_name.trimmed();
 
     if (name.isEmpty())
@@ -3385,423 +2239,6 @@ void MainWindow::CreateNewTable(int pageNum)
         QMessageBox::critical(this, "Ошибка", "Ошибка вставки данных в таблицу:\n" + ins.lastError().text());
         return;
     }
-
-    int idx = lessonList->findText(name);
-    if (idx < 0)
-    {
-        lessonList->addItem(name, pageNum);
-        idx = lessonList->findText(name);
-    }
-    else
-    {
-        lessonList->setItemData(idx, pageNum);
-    }
-
-    qDebug() << "Добавлен элемент comboBox:" << name << "индекс=" << idx << "данные=" << lessonList->itemData(idx);
-
-    lessonList->setCurrentIndex(idx);
-}
-
-// void MainWindow::onPageChanged(int index)
-// {
-//     if (index == -1)
-//     {
-//         qWarning() << "Нет выбранного элемента в ComboBox.";
-//         return;
-//     }
-
-//     // Получаем название таблицы напрямую из текста ComboBox
-//     QString tableName = ui->comboBox->currentText().trimmed();
-//     if (tableName.isEmpty())
-//     {
-//         qWarning() << "Пустое название таблицы.";
-//         return;
-//     }
-
-//     qDebug() << "Selected table:" << tableName;
-
-//     // Проверяем наличие таблицы
-//     QSqlQuery qCheck;
-//     if (!qCheck.exec(QString("SELECT name FROM sqlite_master WHERE type='table' AND name='%1'")
-//                          .arg(tableName)))
-//     {
-//         qWarning() << "Check query failed:" << qCheck.lastError().text();
-//         return;
-//     }
-
-//     if (!qCheck.next())
-//     {
-//         qWarning() << "Table does not exist:" << tableName;
-//         ui->tableWidget->clear();
-//         ui->tableWidget->setRowCount(0);
-//         ui->tableWidget->setColumnCount(0);
-//         return;
-//     }
-
-//     qDebug() << "Found table in sqlite_master:" << qCheck.value(0).toString();
-
-//     // Формируем и выполняем запрос
-//     QString sql = QString("SELECT * FROM \"%1\" ORDER BY id").arg(tableName);
-//     qDebug() << "SQL:" << sql;
-
-//     QSqlQuery query;
-//     if (!query.exec(sql))
-//     {
-//         qWarning() << "Query failed:" << query.lastError().text();
-//         return;
-//     }
-
-//     // Очистка таблицы виджета
-//     ui->tableWidget->clear();
-//     ui->tableWidget->setRowCount(0);
-
-//     // Установка колонок/заголовков
-//     int colCount = query.record().count();
-//     ui->tableWidget->setColumnCount(colCount);
-//     QStringList headers;
-//     for (int c = 0; c < colCount; ++c)
-//         headers << query.record().fieldName(c);
-//     ui->tableWidget->setHorizontalHeaderLabels(headers);
-
-//     // Заполнение строк
-//     int row = 0;
-//     while (query.next())
-//     {
-//         ui->tableWidget->setRowCount(row + 1);
-//         for (int c = 0; c < colCount; ++c)
-//         {
-//             ui->tableWidget->setItem(row, c, new QTableWidgetItem(query.value(c).toString()));
-//         }
-//         ++row;
-//     }
-
-//     // Если таблица пуста, отображаем пустые строки и столбцы согласно размерности
-//     if (row == 0 && colCount > 0)
-//     {
-//         // Получаем текущую размерность tableWidget
-//         int defaultRows = ui->tableWidget->rowCount();
-//         if (defaultRows == 0)
-//         {
-//             // Если rowCount не установлен, устанавливаем стандартное значение
-//             // (можете изменить на нужное вам значение)
-//             defaultRows = 10; // или другое значение по умолчанию
-//             ui->tableWidget->setRowCount(defaultRows);
-//         }
-
-//         // Заполняем пустыми ячейками
-//         for (int r = 0; r < defaultRows; ++r)
-//         {
-//             for (int c = 0; c < colCount; ++c)
-//             {
-//                 if (!ui->tableWidget->item(r, c))
-//                 {
-//                     ui->tableWidget->setItem(r, c, new QTableWidgetItem(""));
-//                 }
-//             }
-//         }
-
-//         qDebug() << "Empty table loaded with" << defaultRows << "rows and" << colCount << "columns";
-//     }
-//     else
-//     {
-//         qDebug() << "rows loaded:" << row;
-//     }
-// }
-
-void MainWindow::onPageChanged2(int index)
-{
-    if (index == -1)
-    {
-        qWarning() << "Нет выбранного элемента в ComboBox.";
-        return;
-    }
-
-    // Получаем название таблицы напрямую из текста ComboBox
-    QString tableName = lessonList->currentText().trimmed();
-    if (tableName.isEmpty())
-    {
-        qWarning() << "Пустое название таблицы.";
-        return;
-    }
-
-    qDebug() << "Selected table:" << tableName;
-
-    // Проверяем наличие таблицы
-    QSqlQuery qCheck;
-    if (!qCheck.exec(QString("SELECT name FROM sqlite_master WHERE type='table' AND name='%1'")
-                         .arg(tableName)))
-    {
-        qWarning() << "Check query failed:" << qCheck.lastError().text();
-        return;
-    }
-
-    if (!qCheck.next())
-    {
-        qWarning() << "Table does not exist:" << tableName;
-        ui->tableWidget->clear();
-        ui->tableWidget->setRowCount(0);
-        ui->tableWidget->setColumnCount(0);
-        return;
-    }
-
-    qDebug() << "Found table in sqlite_master:" << qCheck.value(0).toString();
-
-    // Формируем и выполняем запрос
-    QString sql = QString("SELECT * FROM \"%1\" ORDER BY id").arg(tableName);
-    qDebug() << "SQL:" << sql;
-
-    QSqlQuery query;
-    if (!query.exec(sql))
-    {
-        qWarning() << "Query failed:" << query.lastError().text();
-        return;
-    }
-
-    // Очистка таблицы виджета
-    ui->tableWidget->clear();
-    ui->tableWidget->setRowCount(0);
-
-    // Установка колонок/заголовков
-    int colCount = query.record().count();
-    ui->tableWidget->setColumnCount(colCount);
-    QStringList headers;
-    for (int c = 0; c < colCount; ++c)
-        headers << query.record().fieldName(c);
-    ui->tableWidget->setHorizontalHeaderLabels(headers);
-
-    // Заполнение строк
-    int row = 0;
-    while (query.next())
-    {
-        ui->tableWidget->setRowCount(row + 1);
-        for (int c = 0; c < colCount; ++c)
-        {
-            ui->tableWidget->setItem(row, c, new QTableWidgetItem(query.value(c).toString()));
-        }
-        ++row;
-    }
-
-    // Если таблица пуста, отображаем пустые строки и столбцы согласно размерности
-    if (row == 0 && colCount > 0)
-    {
-        // Получаем текущую размерность tableWidget
-        int defaultRows = ui->tableWidget->rowCount();
-        if (defaultRows == 0)
-        {
-            // Если rowCount не установлен, устанавливаем стандартное значение
-            // (можете изменить на нужное вам значение)
-            defaultRows = 10; // или другое значение по умолчанию
-            ui->tableWidget->setRowCount(defaultRows);
-        }
-
-        // Заполняем пустыми ячейками
-        for (int r = 0; r < defaultRows; ++r)
-        {
-            for (int c = 0; c < colCount; ++c)
-            {
-                if (!ui->tableWidget->item(r, c))
-                {
-                    ui->tableWidget->setItem(r, c, new QTableWidgetItem(""));
-                }
-            }
-        }
-
-        qDebug() << "Empty table loaded with" << defaultRows << "rows and" << colCount << "columns";
-    }
-    else
-    {
-        qDebug() << "rows loaded:" << row;
-    }
-}
-
-QStringList MainWindow::getTableNames()
-{
-    QStringList tableNames;
-    QSqlQuery query;
-
-    // Выполняем запрос
-    if (!query.exec("SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'")) {
-        qWarning() << "Ошибка выполнения запроса:" << query.lastError().text();
-        return tableNames;
-    }
-
-    // Обрабатываем результаты
-    while (query.next()) {
-        QString tableName = query.value(0).toString();
-        tableNames << tableName;
-    }
-    return tableNames;
-}
-void MainWindow::loadDataToTable(QSqlDatabase &db, QTableWidget *tableWidget)
-{
-    ui->tableWidget->setFont(QFont("Arial", 10));
-
-    if (!db.isOpen())
-    {
-        qDebug() << "Database is not open.";
-        return; // Exit if the database is not open
-    }
-
-    QSqlQuery query(db);
-    if (!query.exec("SELECT * FROM Lessons"))
-    {
-        qDebug() << "Error executing query:" << query.lastError().text();
-        return; // Exit on query failure
-    }
-
-    // Выполняем SELECT-запрос
-    if (query.exec("SELECT * FROM Lessons"))
-    {
-        // Очищаем таблицу
-        tableWidget->clear();
-
-        // Получаем количество колонок
-        int columnCount = query.record().count();
-        //int totalColumns = columnCount;
-
-        // Устанавливаем число колонок
-        tableWidget->setColumnCount(columnCount);
-
-        // Получаем имена полей из базы для заголовков
-        QStringList headers;
-        for (int i = 0; i < columnCount; ++i)
-        {
-            headers << query.record().fieldName(i);
-        }
-        // Устанавливаем горизонтальные заголовки
-        tableWidget->setHorizontalHeaderLabels(headers);
-        tableWidget->horizontalHeader()->setVisible(true);
-        tableWidget->verticalHeader()->setVisible(true);
-
-        // Установка количества строк
-        tableWidget->setRowCount(0);
-
-        int currentRow = 0;
-        // Заполняем таблицу данными
-        while (query.next())
-        {
-            tableWidget->insertRow(currentRow);
-            // int currentColumn = 0;
-            for (int col = 0; col < columnCount; ++col)
-            {
-                QString originalValue = query.value(col).toString(); // Данные из базы
-                // qDebug() << "Значение из базы:" << originalValue;
-
-                originalValue.replace("\\n", "\n");  // заменить буквы '\\n' на перенос строки
-                // qDebug() << "Значение из базы2:" << originalValue;
-
-                QStringList parts = originalValue.split('\n');
-                QString text1, text2, text3, text4, text5;
-                QString displayText;
-                if (parts.size() == 4)
-                {
-                    // Есть ровно три части — можно их использовать или обработать
-                    text1 = parts.at(0);
-                    text2 = parts.at(1);
-                    text3 = parts.at(2);
-                    text4 = parts.at(3);
-
-                    // Пример использования:
-                    displayText = text1 + "\n" + text2 + "\n" + text3 + "\n" + text4;
-                }
-                else if (parts.size() == 1 && !parts.at(0).isEmpty())
-                {
-                    // Только один непустой фрагмент — оставить содержимое без изменений
-                    QString finalValue = originalValue;
-                    displayText = finalValue;
-                    // Используйте finalValue далее по необходимости
-
-
-                } else
-                {
-                    // Все остальные случаи — оставить как есть или обработать по необходимости
-                    QString finalValue = originalValue;
-                    displayText = finalValue;
-                    //qDebug() << "Разделенные части:" << parts;
-                }
-
-                QStringList nonEmptyParts;
-
-                for (int i = 0; i < parts.size(); ++i)
-                {
-                    const QString &part = parts[i];
-                    if (!part.isEmpty())
-                    {
-                        nonEmptyParts << part;
-                    }
-                }
-
-                //QString displayText;
-                if (!nonEmptyParts.isEmpty()) {
-                    displayText = nonEmptyParts.join("\n"); // или любой разделитель
-                } else {
-                    displayText = ""; // или "Пусто"
-                }
-
-                // Заполняем существующую ячейку
-                QTableWidgetItem *item = ui->tableWidget->item(currentRow, col);
-                if (!item)
-                {
-                    item = new QTableWidgetItem();
-                    ui->tableWidget->setItem(currentRow, col, item);
-                }
-                item->setText(displayText);
-                item->setTextAlignment(Qt::AlignHCenter | Qt::AlignVCenter);
-            }
-            ui->tableWidget->setVerticalHeaderItem(currentRow, new QTableWidgetItem(QString::number(currentRow + 1)));
-
-            ++currentRow;
-        }
-    } else
-    {
-        qDebug() << "Ошибка выполнения запроса:" << query.lastError().text();
-    }
-
-    // Предположим, у вас есть таблица с N строками
-    int rowCount = ui->tableWidget->rowCount();
-
-    // Массив данных для вертикальных заголовков
-    QStringList verticalHeaders = {"8.30-10.05\nВерхняя неделя", "8.30-10.05\nНижняя неделя",
-                                   "10.25-12.00\nВерхняя неделя", "10.25-12.00\nНижняя неделя",
-                                   "12.30-14.05\nВерхняя неделя", "12.30-14.05\nНижняя неделя",
-                                   "14.20-15.55\nВерхняя неделя", "14.20-15.55\nНижняя неделя",
-                                   "16.05-17.40\nВерхняя неделя", "16.05-17.40\nНижняя неделя",
-                                   "17.50-19.20\nВерхняя неделя", "17.50-19.20\nНижняя неделя",
-                                   "19.25-21.10\nВерхняя неделя", "19.25-21.10\nНижняя неделя"};
-
-    // Убедитесь, что количество элементов в verticalHeaders совпадает с количеством строк
-    Q_ASSERT(verticalHeaders.size() >= rowCount);
-
-    for (int row = 0; row < rowCount; ++row)
-    {
-        //ui->tableWidget->setVerticalHeaderItem(row, new QTableWidgetItem(verticalHeaders.at(row)));
-
-        QTableWidgetItem *hi = new QTableWidgetItem(verticalHeaders.at(row));
-        hi->setTextAlignment(Qt::AlignCenter);
-        // Разрешаем перенос строк в тексте (в заголовках QTableWidgetItem это учитывается автоматически)
-        ui->tableWidget->setVerticalHeaderItem(row, hi);
-    }
-
-    // Увеличим высоту строки заголовка (высоту строки таблицы), чтобы поместился многострочный заголовок
-    for (int row = 0; row < rowCount; ++row)
-    {
-        ui->tableWidget->setRowHeight(row, 50); // подберите нужное значение
-    }
-
-    for (int col = 0; col < tableWidget->columnCount(); ++col)
-    {
-        QString headerText = tableWidget->horizontalHeaderItem(col)->text();
-        if (headerText == "id")
-        { // замените на точное имя заголовка
-            tableWidget->hideColumn(col);
-            break;
-        }
-    }
-
-    ui->tableWidget->resizeRowsToContents();
-    ui->tableWidget->viewport()->update(); // попробуйте добавить
-
-    ui->tableWidget->hideColumn(0);
 }
 
 void MainWindow::applyRowHeights() {
@@ -4088,40 +2525,6 @@ void MainWindow::showPrintPreview()
     previewDialog->exec();
 }
 
-// void MainWindow::exportToPDF(QTableWidget *tableWidget, const QString &filename)
-// {
-//     QPrinter printer(QPrinter::HighResolution);
-//     printer.setOutputFormat(QPrinter::PdfFormat);
-//     printer.setOutputFileName(filename);
-
-//     QPainter painter(&printer);
-//     int cellWidth = 100;  // Ширина ячейки
-//     int cellHeight = 30;  // Высота ячейки
-
-//     for (int row = 0; row < tableWidget->rowCount(); ++row) {
-//         for (int col = 0; col < tableWidget->columnCount(); ++col) {
-//             QTableWidgetItem *item = tableWidget->item(row, col);
-//             if (item) {
-//                 QRect rect(col * cellWidth, row * cellHeight, cellWidth, cellHeight);
-//                 painter.drawText(rect, item->text());
-//             }
-//         }
-//     }
-
-//     painter.end();
-// }
-
-// void MainWindow::traverseTable(QTableWidget *tableWidget) {
-//     for (int row = 0; row < tableWidget->rowCount(); ++row) {
-//         for (int col = 0; col < tableWidget->columnCount(); ++col) {
-//             QTableWidgetItem *item = tableWidget->item(row, col);
-//             if (item) {
-//                 qDebug() << item->text();  // Обработка ячейки
-//             }
-//         }
-//     }
-// }
-
 void MainWindow::printFullTable(QTableWidget *tableWidget, QPrinter *printer, QString teacherInfo, QString semesterInfo)
 {
     QPainter painter(printer);
@@ -4220,92 +2623,6 @@ void MainWindow::printFullTable(QTableWidget *tableWidget, QPrinter *printer, QS
     painter.end();
 }
 
-// void MainWindow::loadCheckboxState(int month, int year)
-// {
-//     QString dbPath = QString(PROJECT_PATH) + "/base/lesson_base.db";
-
-//     if (db.isOpen()) {
-//         db.close();
-//     }
-
-//     db.setDatabaseName(dbPath);
-
-//     if (!db.open()) {
-//         qDebug() << "❌ ОШИБКА: Не удалось открыть базу";
-//         return;
-//     }
-
-//     qDebug() << "=== НАЧАЛО loadCheckboxState ===";
-
-//     QStringList dayNames = {"Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"};
-
-//     for (int rowIndex = 0; rowIndex < ui->tableWidget_3->rowCount(); ++rowIndex) {
-//         int id = rowIndex + 1;
-
-//         for (int dayIndex = 0; dayIndex < 7; ++dayIndex) {
-//             QWidget* cellWidget = ui->tableWidget_3->cellWidget(rowIndex, dayIndex);
-//             if (cellWidget == nullptr) {
-//                 qDebug() << "  ⚠️ cellWidget == nullptr в" << rowIndex << dayIndex;
-//                 continue;
-//             }
-
-//             QCheckBox* checkbox = cellWidget->findChild<QCheckBox*>();
-//             if (checkbox == nullptr) {
-//                 qDebug() << "  ⚠️ checkbox == nullptr в" << rowIndex << dayIndex;
-//                 continue;
-//             }
-
-//             QString dayName = dayNames[dayIndex];
-//             QString selectQuery = QString("SELECT %1 FROM Save_check WHERE id = ?").arg(dayName);
-
-//             QSqlQuery query(db);
-//             if (!query.prepare(selectQuery)) {
-//                 qDebug() << "  ❌ ОШИБКА подготовки:" << query.lastError().text();
-//                 continue;
-//             }
-
-//             query.addBindValue(id);
-
-//             if (!query.exec()) {
-//                 qDebug() << "  ❌ ОШИБКА выполнения:" << query.lastError().text();
-//                 continue;
-//             }
-
-//             if (query.next()) {
-//                 int state = query.value(0).toInt();
-//                 bool isChecked = (state == 1);
-
-//                 // ⭐ Блокируем сигналы, чтобы не срабатывал connect при программной установке
-//                 checkbox->blockSignals(true);
-//                 checkbox->setChecked(isChecked);
-//                 checkbox->blockSignals(false);
-
-//                 // ⭐ СТИЛИЗУЙТЕ ВСЕ ЭЛЕМЕНТЫ В КОНТЕЙНЕРЕ
-//                 QString bgColor = isChecked ? "#00FF00" : "red";
-//                 QString styleSheet = QString(
-//                                          "QWidget { background-color: %1; } "
-//                                          "QCheckBox { background-color: %1; } "
-//                                          "QLabel { background-color: %1; }"
-//                                          ).arg(bgColor);
-
-//                 cellWidget->setStyleSheet(styleSheet);
-
-//                 qDebug() << "  Ячейка" << rowIndex << dayIndex
-//                          << "| State:" << state
-//                          << "| Checked:" << isChecked
-//                          << "| Цвет:" << bgColor;
-//             } else {
-//                 qDebug() << "  ⚠️ Нет результатов для" << rowIndex << dayIndex;
-//             }
-//         }
-//     }
-
-//     // ⭐ ОБНОВИТЕ ВЕСЬ VIEWPORT
-//     ui->tableWidget_3->viewport()->update();
-
-//     qDebug() << "=== КОНЕЦ loadCheckboxState ===\n";
-// }
-
 void MainWindow::addLine()
 {
     QTableWidget *table = getCurrentTable();
@@ -4362,7 +2679,7 @@ QTableWidget* MainWindow::getCurrentTable()
     return nullptr; // Если есть другие вкладки без этих таблиц
 }
 
-void MainWindow::ClickedLeftButton2(int row, int column)
+void MainWindow::ClickedLeftButton2(int row)
 {
     if (editingEnabled) return;
 
@@ -4372,7 +2689,8 @@ void MainWindow::ClickedLeftButton2(int row, int column)
     rsc5->setGeometry(QStyle::alignedRect(Qt::LeftToRight, Qt::AlignCenter, rsc5->size(), screen->geometry()));
 
     // 1. Запускаем диалог. Внутри AddLine вы должны присваивать значения глобальным переменным
-    if (rsc5->exec() != QDialog::Accepted) {
+    if (rsc5->exec() != QDialog::Accepted)
+    {
         rsc5->deleteLater();
         return;
     }
