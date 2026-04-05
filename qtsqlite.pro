@@ -1,4 +1,5 @@
-QT       += core gui sql printsupport dbus widgets
+QT       += core gui sql printsupport dbus widgets \
+    core5compat
 
 greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
 

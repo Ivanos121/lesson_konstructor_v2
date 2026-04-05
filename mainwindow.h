@@ -45,8 +45,8 @@ public:
     VertikalheaderView *horHeader, *horHeader7, *horHeader8, *horHeader9, *horHeader4,
         *horHeader10 ;
 
-    void applyRowHeights();
-        void CreateNewTable();
+    void applyRowHeights(QTableWidget *table);
+    void CreateNewTable();
     bool print_lesson(QTableWidget *table, QPrinter *printer,
                       const QString &headerText = "", const QString &subHeaderText = "");
 
@@ -113,5 +113,7 @@ private:
     void saveMonth(int year, int month);
     void updateCellVisuals(int dayIndex, int state, bool isToday);
     void rebuildCalendarGrid(int year, int month);
+    void copySelection();
+    void pasteSelection();
 };
 #endif // MAINWINDOW_H
