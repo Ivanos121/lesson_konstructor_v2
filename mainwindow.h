@@ -115,5 +115,10 @@ private:
     void rebuildCalendarGrid(int year, int month);
     void copySelection();
     void pasteSelection();
+    void insertToTable(QTableWidget *table, int r, int c, QString text);
+    void printAlternativeTable(QTableWidget *table, QPrinter *printer, QString title, QString info);
+    void saveAnnualLoad(QTableWidget *table, const QString &dbTableName);
+    void loadAnnualLoad(QTableWidget *table, const QString &dbTableName);
+    void markHeaderRow(QTableWidget *table);
 };
 #endif // MAINWINDOW_H
